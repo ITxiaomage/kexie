@@ -11,7 +11,7 @@ from .cal_similar_news import *
 from .mongo import *
 from .cal_similar_news import  *
 import copy
-
+from datetime import datetime
 
 #根据部门和频道获
 def channel_branch(request):
@@ -22,7 +22,7 @@ def channel_branch(request):
         if channel not in get_all_channel():
             channel = CHANNEL_SZYW
     except Exception as err:
-        print("获取频道出现错误，获取到的数据为：{0}，因此设为默认值:{1}".format(channel,CHANNEL_SZYW))
+        print("获取频道出现错误，因此设为默认值:{0}".format(CHANNEL_SZYW))
         channel = CHANNEL_SZYW
         print(err)
 
@@ -32,7 +32,7 @@ def channel_branch(request):
         if branch not in num_dfkx() and  branch not in num_kxjg() and branch not in num_xuehui():
             branch = BGT
     except Exception as err:
-        print("获取部门出现错误，获取到的数据为：{0}，因此设为默认值:{1}".format(branch, BGT))
+        print("获取部门出现错误，因此设为默认值:{0}".format(BGT))
         branch = BGT
         print(err)
 
@@ -44,8 +44,8 @@ def channel_branch(request):
     #时政频道特殊处理一下,先获取到一条置顶的新闻
     if channel == CHANNEL_SZYW:
         result_list.extend(search_data_from_mysql(ChinaTopNews, n=1))
-
-
+    print('********')
+    print(result_list)
     #全国学会的用户在全国学会频道应该就只有他们自己的新闻，地方科协也一样
     if branch in num_xuehui() and channel == CHANNEL_QGXH:
         #根据部门ID取得部门名称
@@ -55,21 +55,46 @@ def channel_branch(request):
     else:
         department = None
     #将部门名称作为条件去查询，要不然就默认按照时间
-    result_list.extend(search_data_from_mysql(mymodels, source=department))
+    result_list.extend(search_data_from_mysql(mymodels, n= MSX_SEARCH_NEWS,source=department))
+
+    #如果取到的日期和当前的日期之间相差7天以上就删除
+    recent_news_list = diff_time(result_list)
+
+    #按照当前用户的id，检索用户的历史记录，将得到的新闻进行算法排序,得到第一次的新闻推荐列表
+    first_news_list = sort_all_news(recent_news_list,branch,channel)
 
     #如果新闻数量不够，就按照时间去取
-    num_news= len(result_list)
+    if  first_news_list:
+        num_news= len(first_news_list)
+    else:
+        num_news = 0
     if num_news < MAX_NEWS_NUMBER:
         n = MAX_NEWS_NUMBER - num_news
         #现获取到信息的id
         id_list =[]
-        for one_news in result_list:
+        for one_news in first_news_list:
             news_id = one_news['news_id']
             index = news_id.rindex("_")
             number = news_id[index + 1:]
             id_list.append(int(number))
-        result_list.extend(search_data_from_mysql(mymodels,n=n,id_list=id_list))
-    return HttpResponse(json.dumps(result_list, ensure_ascii=False))
+        first_news_list.extend(search_data_from_mysql(mymodels,n=n,id_list=id_list))
+    return HttpResponse(json.dumps(first_news_list, ensure_ascii=False))
+
+#刚开始过滤掉一周以前的新闻
+def diff_time(news_list):
+    result_list = []
+    for one_news in news_list:
+        news_time = one_news['news_time']
+        diff = datetime.today().date() - datetime.strptime(news_time, '%Y-%m-%d').date()
+        if diff.days < WEEK:
+            result_list.append(one_news)
+    return result_list
+
+#按照关键字进行排序，先检索和科协领导相关的
+def sort_all_news(news_list,branch,channel):
+    return []
+
+
 
 #获取所有的频道
 def get_all_channel():
@@ -92,7 +117,7 @@ def search_data_from_mysql(myModel,n = MAX_NEWS_NUMBER,**kw):
         id_list=[]
     if not source :
         try:
-            data = myModel.objects.filter(hidden=1).exclude(id__in= id_list).values_list('id','title','img','time','source').order_by('-time')[:n]
+            data = myModel.objects.filter(hidden=1).exclude(id__in= id_list).values_list('id','title','img','time','source','comment','like').order_by('-time')[:n]
             ChannelToDatabase.objects.exclude()
         except Exception as err:
             print("{0}数据库检索不到数据".format(myModel._meta.db_table))
@@ -105,45 +130,33 @@ def search_data_from_mysql(myModel,n = MAX_NEWS_NUMBER,**kw):
             print("{0}数据库检索不到数据".format(myModel._meta.db_table))
             data = None
             print(err)
-
-    for one in data:
-        temp_dict ={}
-        news_id = str(myModel._meta.db_table) + '_' +str (one[0])
-        temp_dict['news_id'] = news_id
-        temp_dict['news_title'] = one[1]
-        temp_dict['news_img']= one[2]
-        temp_dict['news_time'] = one[3]
-        temp_dict['source'] = one[4]
-        temp_dict['comment'] = one[5]
-        temp_dict['like'] = one[6]
-        result.append(temp_dict)
+    if data:
+        for one in data:
+            print(one)
+            temp_dict ={}
+            news_id = str(myModel._meta.db_table) + '_' +str (one[0])
+            temp_dict['news_id'] = news_id
+            temp_dict['news_title'] = one[1]
+            temp_dict['news_img']= one[2]
+            temp_dict['news_time'] = one[3]
+            temp_dict['source'] = one[4]
+            temp_dict['comment'] = one[5]
+            temp_dict['like'] = one[6]
+            result.append(temp_dict)
     return result
 
 #根据新闻id返回内容,并记录用户画像
 def news_content(request):
     news_id = request.GET.get('news_id')
-    index = news_id.rindex('_')
-    db_table = news_id[:index]
-    number = news_id[index+1:]
-    #根据db_table获取到models
-    mymodels = table_to_models(db_table)
-    #查到数据
-    contents = mymodels.objects.filter(id=number).values_list('content','like','comment','keywords')
-    #保存结果
-    result_dict = {}
-    for one in contents:
-        result_dict['content'] = one[0]
-        result_dict['like'] = one[1]
-        result_dict['comment'] = one[2]
-        result_dict['keywords_list']= one[3]
-
     try:
         user_id = request.GET.get('user_id')
     except Exception as err:
         user_id = None
         print(err)
 
+    news_info_list = accord_news_id_get_content_list(news_id)
     # 找到user_id才进行用户画像
+    db_table, number = get_table_and_id(news_id)
     if user_id:
         # 只有科技热点和时政新闻记录用户画像
         if db_table == 'news' or db_table == 'tech':
@@ -152,10 +165,35 @@ def news_content(request):
         else:
             cur_channel =None
         if cur_channel:
-                record_user_image(user_id, cur_channel,result_dict['keywords_list'].split(' '))
+                record_user_image(user_id, cur_channel,news_info_list['keywords_list'].split(' '))
     #取出字典里的关键词列表
-    result_dict.pop("keywords_list")
-    return HttpResponse(json.dumps(result_dict, ensure_ascii=False))
+    news_info_list.pop("keywords_list")
+    return HttpResponse(json.dumps(news_info_list, ensure_ascii=False))
+
+#根据新闻id,获取当前新闻的信息
+def accord_news_id_get_content_list(news_id):
+    db_table, number = get_table_and_id(news_id)
+    #根据db_table获取到models
+    mymodels = table_to_models(db_table)
+    #查到数据
+    contents = mymodels.objects.filter(id=number).values_list('content','like','comment','keywords','title')
+    #保存结果
+    result_dict = {}
+    for one in contents:
+        result_dict['content'] = one[0]
+        result_dict['like'] = one[1]
+        result_dict['comment'] = one[2]
+        result_dict['keywords_list']= one[3]
+        result_dict['title'] = one[4]
+    return result_dict
+
+#根据新闻id获取到数据表和在表中的id
+def get_table_and_id(news_id):
+    index = news_id.rindex('_')
+    db_table = news_id[:index]
+    number = news_id[index+1:]
+    return db_table,number
+
 
 def record_user_image(user_id, cur_channel,keywords_list):
     user = search_user_from_momgodb(id=user_id)

@@ -8,6 +8,10 @@ MAX_KEYWORDS = 5
 
 #提取的新闻的最大数量
 MAX_NEWS_NUMBER = 10
+#去数据库检索数据的最大值
+MSX_SEARCH_NEWS= 1000
+#定义一周的时间
+WEEK= 7
 
 #模型名字和数据库的设计
 models_to_db_table = {"news":"News","kx":"KX","dfkx":"DFKX","qgxh":"QGXH","tech":"TECH","chinaTopNews":"ChinaTopNews"}
@@ -24,8 +28,10 @@ BGT= '2000000309'
 
 #定义mongodb的数据库
 MONGODB_DB = 'kexie'
-#定义mongodb上的collection
-COLLECTION = 'user'
+#定义mongodb上的用户画像collection
+USER_IMAGE = 'user_image'
+#定义机构画像
+ORG_IMAMGE= 'org_image'
 
 #定义用户画像中相似度的值
 SIMILIAR = 0.8

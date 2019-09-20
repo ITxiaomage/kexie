@@ -8,7 +8,7 @@ urlpatterns = [
 
 
     # 根据channel和branch返回数据
-    path('newsList', views.channel_branch, name="newsList"),
+    path('get_similar_news_data', views.channel_branch, name="newsList"),
 
     # 根据新闻id获取新闻内容
     path('newsContent', views.news_content,name = "newsContent"),
