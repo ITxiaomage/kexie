@@ -20,8 +20,8 @@ class NewsBase(models.Model):
     priority =  models.IntegerField(default= 0,validators=[MaxValueValidator(10),MinValueValidator(0)])
     #屏蔽新闻的标志,默认不屏蔽设置为1，屏蔽就设置为0
     hidden = models.BooleanField(default= True)
-    #是否今天推送的标志，默认设置为0表示不推送
-    today = models.BooleanField(default=False)
+    #今天推送的新闻的排序，值越大，新闻的优先级越高
+    today = models.IntegerField(default= 0,validators=[MaxValueValidator(100),MinValueValidator(0)])
     class Meta:
         managed =True
         abstract = True
