@@ -22,6 +22,7 @@ def channel_branch(request):
         if channel not in get_all_channel():
             channel = CHANNEL_SZYW
     except Exception as err:
+        print("获取频道出现错误，获取到的数据为：{0}，因此设为默认值:{1}".format(channel,CHANNEL_SZYW))
         channel = CHANNEL_SZYW
         print(err)
 
@@ -31,6 +32,7 @@ def channel_branch(request):
         if branch not in num_dfkx() and  branch not in num_kxjg() and branch not in num_xuehui():
             branch = BGT
     except Exception as err:
+        print("获取部门出现错误，获取到的数据为：{0}，因此设为默认值:{1}".format(branch, BGT))
         branch = BGT
         print(err)
 
@@ -51,15 +53,15 @@ def channel_branch(request):
     elif branch in num_dfkx() and channel == CHANNEL_DFKX:
         department = accord_number_get_department(branch)
     else:
-        department = ''
+        department = None
     #将部门名称作为条件去查询，要不然就默认按照时间
-    result_list.extend(search_data_from_mysql(mymodels, source=department, ))
+    result_list.extend(search_data_from_mysql(mymodels, source=department))
 
     #如果新闻数量不够，就按照时间去取
     num_news= len(result_list)
     if num_news < MAX_NEWS_NUMBER:
         n = MAX_NEWS_NUMBER - num_news
-        #现获取到信心的id
+        #现获取到信息的id
         id_list =[]
         for one_news in result_list:
             news_id = one_news['news_id']
@@ -93,12 +95,14 @@ def search_data_from_mysql(myModel,n = MAX_NEWS_NUMBER,**kw):
             data = myModel.objects.filter(hidden=1).exclude(id__in= id_list).values_list('id','title','img','time','source').order_by('-time')[:n]
             ChannelToDatabase.objects.exclude()
         except Exception as err:
+            print("{0}数据库检索不到数据".format(myModel._meta.db_table))
             data = None
             print(err)
     else:
         try:
             data = myModel.objects.filter(hidden=1).filter(source=source).values_list('id','title','img','time','source','comment','like').order_by('-time')[:n]
         except Exception as err:
+            print("{0}数据库检索不到数据".format(myModel._meta.db_table))
             data = None
             print(err)
 
