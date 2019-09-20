@@ -19,5 +19,5 @@ from django.urls import path,include
 urlpatterns = [
     path('admin/', admin.site.urls),
     #路由转发
-    path('mgh/',include('TuiJian.urls'))
+    path('api/recommendation/',include('TuiJian.urls'))
 ]
