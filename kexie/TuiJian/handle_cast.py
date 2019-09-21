@@ -336,14 +336,14 @@ def handle_wechat_list(data, table,cursor):
             print('出现错误')
     return result_list
 
-def package_data_dict(title, link, content, date, source):
+def package_data_dict(title=None, url=None, img =None,content=None, date=None, source=None):
     temp_dict = {}
     keywords = TF_IDF(content,MAX_KEYWORDS)
     if len(keywords) > 4:
         temp_dict['title'] = title
-        temp_dict['url'] = link
+        temp_dict['url'] = url
         temp_dict['content'] = content
-        temp_dict['img'] = ''
+        temp_dict['img'] = img
         temp_dict['time'] = date
         temp_dict['author'] = ''
         temp_dict['keywords'] = ' '.join(keywords)
