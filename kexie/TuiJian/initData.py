@@ -16,7 +16,7 @@ def handle_organization():
 
 
     # 直属事业单位
-    df = pd.read_excel(path, sheet_name='直属事业单位')  # 可以通过sheet_name来指定读取的表单
+    df = pd.read_excel(jiggou_path, sheet_name='直属事业单位')  # 可以通过sheet_name来指定读取的表单
     data = df.ix[:, ['id', '名称']].values  # id，名称
     for one in data:
         result_dict[str(one[0])] = one[-1]
@@ -28,7 +28,7 @@ def handle_organization():
 
     result_dict = {}
     # 地方科协
-    df = pd.read_excel(path, sheet_name='地方科协')  # 可以通过sheet_name来指定读取的表单
+    df = pd.read_excel(jiggou_path, sheet_name='地方科协')  # 可以通过sheet_name来指定读取的表单
     data = df.ix[:, ['id', '名称']].values  # id，名称
     for one in data:
         result_dict[str(one[0])] = one[-1]
@@ -38,7 +38,7 @@ def handle_organization():
 
     result_dict = {}
     # 全国学会
-    df = pd.read_excel(path, sheet_name='全国学会')  # 可以通过sheet_name来指定读取的表单
+    df = pd.read_excel(jiggou_path, sheet_name='全国学会')  # 可以通过sheet_name来指定读取的表单
     data = df.ix[:, ['id', '名称']].values  # id，名称
     for one in data:
         result_dict[str(one[0])] = one[-1]
