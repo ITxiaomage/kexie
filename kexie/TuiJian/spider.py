@@ -15,7 +15,60 @@ from selenium.webdriver.support.ui  import WebDriverWait
 
 from .define import *
 img_list =[]
-#########################3###########科协官网用selenium爬取#############################################################
+#################################人民网时政新闻爬虫##################################################
+def get_rmw_news_data(url=r'http://www.people.com.cn/rss/rect_default.json',base_url = r'http://politics.people.com.cn'):
+    data_json= requests.get(url=url).text
+    data_dict = json.loads(data_json)
+    news_list=data_dict['otherNews']
+    result_list = []
+    for one_news in news_list:
+        try:
+            content ,time,img,source = get_rmw_content_time_img(one_news['newsLink'],base_url)
+            result_list.append(package_data_dict(title=one_news['title'],url=one_news['newsLink'],content=str(content),date=time,img=img,source=source))
+        except Exception as err:
+            print('爬取人民网时政新闻出错{0}'.format(one_news))
+            print(err)
+    return result_list
+
+def get_rmw_content_time_img(news_url,base_url):
+    print(news_url)
+    soup = rm_spider_head(news_url)
+    try:
+        news_content = soup.select('#rwb_zw')[0]
+        news_time_source = soup.select('.box01 > div')[0].text
+        news_time = news_time_source.split(' ')[0]
+        year,month,day = news_time[:4],news_time[5:7],news_time[8:10]
+        news_time =  year+'_'+ month+'_'+ day
+        news_source = news_time_source.split(' ')[-1].split('：')[-1]
+        imgs = news_content.findAll('img')
+        img = deal_imgs_and_a(base_url, content=news_content, imgs=imgs)
+    except:
+        try:
+            news_content = soup.select('#picG')[0]
+            news_time_source = soup.select('.page_c')[1].text
+            news_source = news_time_source.split(' ')[0].split('：')[-1]
+            news_time = news_time_source.split(' ')[-1]
+            year,month,day = news_time[:4],news_time[5:7],news_time[8:10]
+            news_time =  year+'_'+ month+'_'+ day
+            img = ''
+        except:
+            news_content = ''
+            news_time =''
+            news_source=''
+            img =''
+    return news_content ,news_time,img,news_source
+
+def rm_spider_head(url):
+    headers = {"User_Agent": "Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; en) Presto/2.8.131 Version/11.11"}
+    try:
+        response = requests.get(url=url, headers=headers)
+        response.encoding=response.apparent_encoding
+        soup = BeautifulSoup(response.text, 'lxml')
+    except Exception as err:
+        print('rm_spider_head出错')
+        soup = None
+    return soup
+##################################科协官网用selenium爬取##############################################
 def update_kexie_news():
     result_list =[]
     try:

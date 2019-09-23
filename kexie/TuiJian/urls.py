@@ -26,4 +26,7 @@ urlpatterns = [
     #清洗cast数据库入库
     path('cast', views.hanle_cast_into_mysql, name="cast"),
 
+    # 人民网数据更
+    path('rmw', views.updata_get_rmw_news_data, name="rmw"),
+
 ]

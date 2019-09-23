@@ -247,7 +247,7 @@ def similar_news_list(request):
 ####################################以下都是爬虫更新入库函数####################################
 
 
-####################################置顶的时政新闻入库###########################################
+#######################置顶的时政新闻入库###################
 def update_china_top_news(request):
     #置顶的时政新闻
     try:
@@ -267,7 +267,7 @@ def update_china_top_news(request):
     return HttpResponse('置顶的时政新闻入库成功')
 
 
-####################################科协官网数据入库###########################################
+####################################科协官网数据入库###################
 def update_kexie_news_into_mysql(request):
     try :
         news_list =spider.update_kexie_news()
@@ -290,6 +290,22 @@ def update_kexie_news_into_mysql(request):
     return render(request,'news.html',{'news_list':news_list})
     #return HttpResponse('科协官网新闻入库成功')
 
+####################################人民网数据更新入库函数###################
+def updata_get_rmw_news_data(request):
+    try:
+        news_list = spider.get_rmw_news_data()
+    except Exception as err:
+        print('人民网获取数据错误')
+        news_list =None
+        print(err)
+    if news_list:
+        for one_news in news_list:
+            news=  News(**one_news)
+            try:
+                news.save()
+            except Exception as e:
+                print(e)
+    return render(request,'news.html',{'news_list':news_list})
 ####################################清洗科协的cast数据库中的科技热点和时政要闻入库###########################
 def hanle_cast_into_mysql(request):
     try:

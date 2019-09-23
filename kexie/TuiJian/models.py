@@ -5,15 +5,15 @@ from django.core.validators import MaxValueValidator,MinValueValidator
 # Create your models here.
 class NewsBase(models.Model):
     title = models.CharField(max_length=255,null=False,unique=True)
-    url = models.CharField(max_length=255)
-    img =  models.CharField(max_length=255)
-    content = models.TextField()
-    author = models.CharField(max_length=255)
-    keywords = models.CharField(max_length=255)
-    time = models.CharField(max_length=255)
-    source = models.CharField(max_length=255)
+    url = models.CharField(max_length=255,null=True)
+    img =  models.CharField(max_length=255,null=True)
+    content = models.TextField(null=False)
+    author = models.CharField(max_length=255,null=True)
+    keywords = models.CharField(max_length=255,null=True)
+    time = models.CharField(max_length=255,null=True)
+    source = models.CharField(max_length=255,null=True)
     #标签，科协下分的：智库、学术、科普、党建。还有单独表明的ring
-    label = models.CharField(max_length=255)
+    label = models.CharField(max_length=255,null=True)
     comment = models.IntegerField(default= 0)
     like = models.IntegerField(default=0)
     #限制人工干预优先级的最大值是10，最小值是0
