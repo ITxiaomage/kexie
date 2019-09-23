@@ -2,6 +2,8 @@
 #默认的中央领导人照片
 IMG = 'http://paper.people.com.cn/rmrb/res/1/20190904/1567536994561_1.jpg'
 
+#训练好的词向量模型路径
+w2v_path_model ='E:\推荐相关\model/w2v.model'
 
 #每篇文章提取的关键字最大数，用户设置用户画像
 MAX_KEYWORDS = 5

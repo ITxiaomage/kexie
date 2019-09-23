@@ -9,11 +9,12 @@ from .spider import TF_IDF
 from .models import *
 import sys
 import os
+from .define import *
 
-path_model ='E:\推荐相关\model/w2v.model'
+w2v_path_model ='E:\推荐相关\model/w2v.model'
 # 加载进训练好的模型
 
-model = gensim.models.Word2Vec.load(path_model)
+model = gensim.models.Word2Vec.load(w2v_path_model)
 #model =''
 def similar_news(news_id):
     result_list = []
