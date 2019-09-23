@@ -1,14 +1,15 @@
 from . import models
 import xlrd
 import pandas as pd
+from .define import *
 
 #初始化机构组织
 def handle_organization():
     # 保存结果的字典
-    path = r'E:\推荐相关\机构.xls'
+
     result_dict = {}
     # 机关
-    df = pd.read_excel(path, sheet_name='机关')  # 可以通过sheet_name来指定读取的表单
+    df = pd.read_excel(jiggou_path, sheet_name='机关')  # 可以通过sheet_name来指定读取的表单
     data = df.ix[:, ['id', '名称']].values  # id，名称
     for one in data:
         result_dict[str(one[0])] = one[-1]
