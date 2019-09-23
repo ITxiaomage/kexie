@@ -17,7 +17,13 @@ urlpatterns = [
     path('similarNews', views.similar_news_list, name="similarNews"),
 
 
-    # 更新置顶的中央新闻数据库
-    path('ctn', views.china_top_news, name="ctn"),
+    # 更新置顶的中央新闻入库
+    path('ctn', views.update_china_top_news, name="ctn"),
+
+    #科协官网数据库入库
+    path('kx', views.update_kexie_news_into_mysql, name="kx"),
+
+    #清洗cast数据库入库
+    path('cast', views.hanle_cast_into_mysql, name="cast"),
 
 ]

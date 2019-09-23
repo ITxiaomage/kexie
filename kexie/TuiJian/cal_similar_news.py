@@ -12,7 +12,9 @@ import os
 
 path_model ='E:\推荐相关\model/w2v.model'
 # 加载进训练好的模型
+
 model = gensim.models.Word2Vec.load(path_model)
+#model =''
 def similar_news(news_id):
     result_list = []
     # 根据id确定数据表和新闻id
@@ -99,7 +101,7 @@ def cal_cos(a_vec, b_vec):
     return cos_sim
 
 
-# 传入两个想了·，计算两个向量的cos
+# 传入两个向量·，计算两个向量的cos
 def xiangsidu(a_text_d2v, b_text_d2v):
     if a_text_d2v == "" or b_text_d2v == "":
         return 0

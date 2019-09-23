@@ -5,7 +5,7 @@ import datetime
 import time
 import re
 from .define import *
-from .spider import  TF_IDF
+from .spider import  *
 from .models import *
 from .organiza import *
 
@@ -339,7 +339,9 @@ def handle_wechat_list(data, table,cursor):
 def package_data_dict(title=None, url=None, img =None,content=None, date=None, source=None):
     temp_dict = {}
     keywords = TF_IDF(content,MAX_KEYWORDS)
+    print(keywords)
     if len(keywords) > 4:
+        print(keywords)
         temp_dict['title'] = title
         temp_dict['url'] = url
         temp_dict['content'] = content

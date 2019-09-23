@@ -13,6 +13,8 @@ from .cal_similar_news import  *
 import copy
 from datetime import datetime
 
+
+####################################根据部门和频道获取到推荐的新闻##################################################
 #根据部门和频道获
 def channel_branch(request):
     result_list= []
@@ -145,6 +147,8 @@ def search_data_from_mysql(myModel,n = MAX_NEWS_NUMBER,**kw):
             result.append(temp_dict)
     return result
 
+
+####################################新闻id返回新闻 内容，并记录用户画像###########################################
 #根据新闻id返回内容,并记录用户画像
 def news_content(request):
     news_id = request.GET.get('news_id')
@@ -233,37 +237,84 @@ def record_user_image(user_id, cur_channel,keywords_list):
     #更新mongo数据库
     update_mongo_accord_user_id(user_id,user['channelList'])
 
+####################################新闻id返回相似新闻的列表####################################
 #返回相似的新闻列表
 def similar_news_list(request):
     news_id = request.GET.get("news_id")
     data = similar_news(news_id)
     return HttpResponse(json.dumps(data,ensure_ascii=False))
 
+####################################以下都是爬虫更新入库函数####################################
 
-def china_top_news(request):
-    data = spider.china_top_news()
-    china_top_news = ChinaTopNews(**data)
+
+####################################置顶的时政新闻入库###########################################
+def update_china_top_news(request):
+    #置顶的时政新闻
     try:
-        china_top_news.save()
+        data = spider.china_top_news()
+        china_top_news = ChinaTopNews(**data)
+    except Exception as  err:
+        print('获取置顶的时政新闻失败')
+        china_top_news = None
+        print(err)
+    #置顶时政新闻入库
+    if china_top_news:
+        try:
+            china_top_news.save()
+        except Exception as err:
+            print('插入置顶的时政新闻失败')
+            print(err)
+    return HttpResponse('置顶的时政新闻入库成功')
+
+
+####################################科协官网数据入库###########################################
+def update_kexie_news_into_mysql(request):
+    try :
+        news_list =spider.update_kexie_news()
+    except Exception as err:
+        print('selenium获取科协官网失败')
+        print(err)
+        try:
+            news_list  = spider.get_kexie_news_data_list()
+        except Exception as err:
+                print('bs4获取科协官网失败')
+                news_list = []
+                print(err)
+    if news_list:
+        for one_news in news_list:
+            kx =  KX(**one_news)
+            try:
+                kx.save()
+            except Exception as e:
+                print(e)
+    return render(request,'news.html',{'news_list':news_list})
+    #return HttpResponse('科协官网新闻入库成功')
+
+####################################清洗科协的cast数据库中的科技热点和时政要闻入库###########################
+def hanle_cast_into_mysql(request):
+    try:
+        handle_cast.start()
+    except Exception as err:
+        print('清洗cast数据库入库出错')
+        print(err)
+    try:
+        handle_cast.sz_kj()
     except Exception as e:
-        return HttpResponse('sava data  Failed:{0}'.format(e))
-    return HttpResponse('sava data sucessful')
+        print("时政和科技热点数据入库出错")
+        print(e)
+    return HttpResponse('cast数据库清洗入库成功')
 
+####################################初始化相关函数###########################################
 
-
+############初始化科协机关、事业单位、地方科协和全国学会的组织结构代码和名称###############
 def save_org_into_mysql(request):
     try:
         initData.handle_organization()
     except Exception as e:
-        return HttpResponse('sava data  Failed:{0}'.format(e))
-    return HttpResponse('sava data sucessful')
+        return HttpResponse('初始化科协机构成功:{0}'.format(e))
+    return HttpResponse('初始化科协机构成功')
 
-def hanle_cast_into_mysql(request):
-    try:
-        handle_cast.sz_kj()
-    except Exception as e:
-        return HttpResponse('sava data  Failed:{0}'.format(e))
-    return HttpResponse('sava data sucessful')
+
 
 
 
