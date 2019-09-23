@@ -38,8 +38,10 @@ def get_rmw_content_time_img(news_url,base_url):
         news_time_source = soup.select('.box01 > div')[0].text
         news_time = news_time_source.split(' ')[0]
         year,month,day = news_time[:4],news_time[5:7],news_time[8:10]
-        news_time =  year+'_'+ month+'_'+ day
+        news_time =  year+'-'+ month+'-'+ day
         news_source = news_time_source.split(' ')[-1].split('：')[-1]
+        if news_source == '闻':
+            news_source = '人民网-时政'
         imgs = news_content.findAll('img')
         img = deal_imgs_and_a(base_url, content=news_content, imgs=imgs)
     except:
@@ -49,7 +51,7 @@ def get_rmw_content_time_img(news_url,base_url):
             news_source = news_time_source.split(' ')[0].split('：')[-1]
             news_time = news_time_source.split(' ')[-1]
             year,month,day = news_time[:4],news_time[5:7],news_time[8:10]
-            news_time =  year+'_'+ month+'_'+ day
+            news_time =  year+'-'+ month+'-'+ day
             img = ''
         except:
             news_content = ''

@@ -29,4 +29,14 @@ urlpatterns = [
     # 人民网数据更
     path('rmw', views.updata_get_rmw_news_data, name="rmw"),
 
+
+    ############初始化的函数，只需要执行一次##########
+    #初始化组织机构
+    path('org', views.save_org_into_mysql, name="org"),
+    #科协领导
+    path('leader', views.save_leader, name="leader"),
+
+
+
+
 ]

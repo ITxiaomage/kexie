@@ -14,6 +14,7 @@ import copy
 from datetime import datetime
 
 
+
 ####################################根据部门和频道获取到推荐的新闻##################################################
 #根据部门和频道获
 def channel_branch(request):
@@ -329,6 +330,14 @@ def save_org_into_mysql(request):
     except Exception as e:
         return HttpResponse('初始化科协机构成功:{0}'.format(e))
     return HttpResponse('初始化科协机构成功')
+#save_kexie_leader给mongodb插入一个样例
+def save_leader(request):
+    try:
+        save_kexie_leader()
+    except Exception as err:
+        print('初始化科协领导')
+        print(err)
+    return HttpResponse('初始化科协领导成功')
 
 
 
