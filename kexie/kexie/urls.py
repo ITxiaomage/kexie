@@ -15,9 +15,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path,include
-
+from django.conf import settings
+from django.conf.urls.static import static
+import os
 urlpatterns = [
     path('admin/', admin.site.urls),
     #路由转发
-    path('api/recommendation/',include('TuiJian.urls'))
-]
+    path('api/recommendation/',include('TuiJian.urls')),
+    path('ckeditor/', include('ckeditor_uploader.urls')),
+
+]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)  # 没有这一句无法显示上传的图片
+

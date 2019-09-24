@@ -38,7 +38,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'TuiJian'
+    'TuiJian',
+    'ckeditor',
+    'ckeditor_uploader', # 富文本编辑器上传图片模块
 ]
 
 MIDDLEWARE = [
@@ -125,3 +127,33 @@ USE_TZ = False
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR,'static/')
+STATIC_URL = '/static/'
+
+CKEDITOR_JQUERY_URL ='https://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js'
+
+CKEDITOR_CONFIGS = {'default':
+                        {'toolbar': 'full',
+                         'height': 1000,
+                         'width': 1000,
+                         },
+                    }
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
+
+MEDIA_URL = '/media/'
+CKEDITOR_UPLOAD_PATH = 'upload/'
+CKEDITOR_IMAGE_BACKEND = "pillow"
+CKEDITOR_CONFIGS = {
+    # django-ckeditor默认使用default配置
+    'default': {
+        # 编辑器宽度自适应
+        'width':'auto',
+        'height':'auto',
+        # tab键转换空格数
+        'tabSpaces': 4,
+        # 工具栏风格
+        'toolbar': 'Custom',
+        # 加入代码块插件
+        'extraPlugins': ','.join(['codesnippet']),
+    }
+}

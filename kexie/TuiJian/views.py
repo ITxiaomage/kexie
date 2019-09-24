@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.http import  HttpResponse
+from django.http import HttpResponse, JsonResponse
 from . import spider
 from .models import *
 from . import initData
@@ -12,6 +12,7 @@ from .mongo import *
 from .cal_similar_news import  *
 import copy
 from datetime import datetime
+from django.core.serializers import serialize
 
 
 
@@ -45,8 +46,8 @@ def channel_branch(request):
     mymodels = table_to_models(db_table[0][0])
 
     #时政频道特殊处理一下,先获取到一条置顶的新闻
-    if channel == CHANNEL_SZYW:
-        result_list.extend(search_data_from_mysql(ChinaTopNews, n=1))
+    # if channel == CHANNEL_SZYW:
+    #     result_list.extend(search_data_from_mysql(ChinaTopNews, n=1))
     print('********')
     print(result_list)
     #全国学会的用户在全国学会频道应该就只有他们自己的新闻，地方科协也一样
@@ -140,13 +141,30 @@ def search_data_from_mysql(myModel,n = MAX_NEWS_NUMBER,**kw):
             news_id = str(myModel._meta.db_table) + '_' +str (one[0])
             temp_dict['news_id'] = news_id
             temp_dict['news_title'] = one[1]
-            temp_dict['news_img']= one[2]
+            temp_dict['news_img']= str(one[2])
             temp_dict['news_time'] = one[3]
             temp_dict['source'] = one[4]
             temp_dict['comment'] = one[5]
             temp_dict['like'] = one[6]
             result.append(temp_dict)
     return result
+####################################获取的中央领导人接口##################################################
+def get_china_top_news(request):
+    result_dict ={}
+    try:
+        chinaTopNews =  ChinaTopNews.objects.all().order_by('-time')[0]
+        result_dict['title'] = chinaTopNews.title
+        result_dict['time'] = chinaTopNews.time
+        result_dict['img'] = str(chinaTopNews.img)
+        result_dict['source'] = chinaTopNews.source
+        result_dict['news_id'] = str(ChinaTopNews._meta.db_table) + '_'+ str(chinaTopNews.id)
+        print(result_dict)
+        my = serialize('json', result_dict)
+    except Exception as err:
+        print('读取置顶中央新闻失败')
+        print(err)
+    #return JsonResponse(result_dict, safe=False)
+    return HttpResponse(json.dumps(result_dict, ensure_ascii=False))
 
 
 ####################################新闻id返回新闻 内容，并记录用户画像###########################################
@@ -242,8 +260,11 @@ def record_user_image(user_id, cur_channel,keywords_list):
 #返回相似的新闻列表
 def similar_news_list(request):
     news_id = request.GET.get("news_id")
-    data = similar_news(news_id)
-    return HttpResponse(json.dumps(data,ensure_ascii=False))
+    if news_id:
+        data = similar_news(news_id)
+        return HttpResponse(json.dumps(data,ensure_ascii=False))
+    else:
+        return HttpResponse('news_id错误')
 
 ####################################以下都是爬虫更新入库函数####################################
 
@@ -288,8 +309,8 @@ def update_kexie_news_into_mysql(request):
                 kx.save()
             except Exception as e:
                 print(e)
-    return render(request,'news.html',{'news_list':news_list})
-    #return HttpResponse('科协官网新闻入库成功')
+    #return render(request,'news.html',{'news_list':news_list})
+    return HttpResponse('科协官网新闻入库成功')
 
 ####################################人民网数据更新入库函数###################
 def updata_get_rmw_news_data(request):
@@ -306,7 +327,8 @@ def updata_get_rmw_news_data(request):
                 news.save()
             except Exception as e:
                 print(e)
-    return render(request,'news.html',{'news_list':news_list})
+    return  HttpResponse('人名网时政新闻入库成功')
+    #return render(request,'news.html',{'news_list':news_list})
 ####################################清洗科协的cast数据库中的科技热点和时政要闻入库###########################
 def hanle_cast_into_mysql(request):
     try:

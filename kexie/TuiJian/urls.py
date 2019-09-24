@@ -16,6 +16,9 @@ urlpatterns = [
     # 根据新闻id获取相似新闻列表
     path('similarNews', views.similar_news_list, name="similarNews"),
 
+    #获取置顶的中央领导人接口
+    path('china', views.get_china_top_news, name="chinaTopNews"),
+
 
     # 更新置顶的中央新闻入库
     path('ctn', views.update_china_top_news, name="ctn"),
@@ -35,6 +38,7 @@ urlpatterns = [
     path('org', views.save_org_into_mysql, name="org"),
     #科协领导
     path('leader', views.save_leader, name="leader"),
+
 
 
 
