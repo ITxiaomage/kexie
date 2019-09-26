@@ -18,6 +18,7 @@ def sz_kj():
     data= ['人民网-时政频道','人民网-国际频道','人民网-中国共产党新闻网']
     result_list = []
     for one in data:
+        print(one)
         sql = "select * from {0} where source ='{1}'order by time  desc  limit 1000".format(table, one)
         print(sql)
         try:
@@ -58,7 +59,7 @@ def start():
     db_table = 'cast'
     host = "192.168.171.48"
     cast_db,cast_cursor = link_db(db_table,host)
-
+    print('开始处理media_content数据库的新闻')
     #处理主流媒体
     cast_table='media_content'
 
@@ -70,7 +71,7 @@ def start():
 
     #保存数据到数据库
     save_data_to_mysql(data,TECH)
-
+    print('开始处理website数据库的新闻')
     # 处理website
     cast_table = 'website'
     data = handle_website_xuehui(xuehui(), cast_table, cast_cursor)
@@ -86,6 +87,7 @@ def start():
     data = handle_website_list(media,cast_table,cast_cursor)
     save_data_to_mysql(data, KX)
 
+    print('开始处理wechat数据库的新闻')
     #处理wechat
     # 全国学会
     cast_table = 'wechat'
@@ -125,6 +127,7 @@ def start():
 
 def save_data_to_mysql(data,myModel):
     for one_data in data:
+        print(one_data)
         news = myModel(**one_data)
         try:
             news.save()
@@ -153,7 +156,7 @@ def handle_media_content_list(data, table,cursor):
                 else:
                     date = datetime.datetime.now().strftime('%Y-%m-%d')
                 #数据封装进字典
-                result_list.append(package_data_dict(title, link, content, date, source))
+                result_list.append(package_data_dict(title=title, url=link, content=content,date=date, source=source))
 
         except :
             print('出现错误')
@@ -165,19 +168,19 @@ def handle_website_xuehui( data, table,cursor):
     result_list=[]
     for one in data :
         print(one)
-        sql = "select * from {0} where 来源 like'{1}%'order by 日期 desc limit 100 ".format(table,one)
+        sql = "select * from {0} where 来源 like'{1}'order by 日期 desc limit 100 ".format(table,one)
         try:
             cursor.execute(sql)
             all_news = cursor.fetchall()
             for one_news in all_news:
                 title, link, content, date, source = one_news[5], one_news[7], one_news[10], one_news[3], one_news[0]
                 # 没有content就不要了
-                if not content or content == "空" or link =="空" or title == "空" or source == "空":
+                if not content or content == "空"  or title == "空" or source == "空":
                     continue
                 #处理日期
                 date = datetime.datetime.now().strftime('%Y-%m-%d')
                 #数据封装进字典
-                result_list.append(package_data_dict(title, link, content, date, source))
+                result_list.append(package_data_dict(title=title, url=link, content=content,date=date, source=source))
 
         except :
             print('出现错误')
@@ -203,7 +206,7 @@ def handle_website_shenghui( data, table,cursor):
                 title, link, content, date, source = one_news[5], one_news[7], one_news[10], one_news[3], one_news[0]
 
                 # 没有content就不要了
-                if not content or content == "空" or link =="空" or title == "空" or source == "空":
+                if not content or content == "空"  or title == "空" or source == "空":
                     continue
                 #处理日期
                 if date != '空':
@@ -211,7 +214,7 @@ def handle_website_shenghui( data, table,cursor):
                 else:
                     date = datetime.datetime.now().strftime('%Y-%m-%d')
                 #数据封装进字典
-                result_list.append(package_data_dict(title, link, content, date, quan_source))
+                result_list.append(package_data_dict(title=title, url=link, content=content,date=date, source=quan_source))
 
         except Exception as err:
             print(err)
@@ -240,7 +243,7 @@ def handle_website_list(data, table,cursor):
                 else:
                     date = datetime.datetime.now().strftime('%Y-%m-%d')
                 #数据封装进字典
-                result_list.append(package_data_dict(title, link, content, date, source))
+                result_list.append(package_data_dict(title=title, url=link, content=content,date=date, source=source))
 
         except :
             print('出现错误')
@@ -269,7 +272,7 @@ def handle_wechat_xuehui( data, table,cursor):
                 else:
                     date = datetime.datetime.now().strftime('%Y-%m-%d')
                 #数据封装进字典
-                result_list.append(package_data_dict(title, link, content, date, source))
+                result_list.append(package_data_dict(title=title, url=link, content=content,date=date, source=source))
 
         except :
             print('出现错误')
@@ -303,7 +306,7 @@ def handle_wechat_shenghui( data, table,cursor):
                 else:
                     date = datetime.datetime.now().strftime('%Y-%m-%d')
                 #数据封装进字典
-                result_list.append(package_data_dict(title, link, content, date, quan_source))
+                result_list.append(package_data_dict(title=title, url=link, content=content,date=date, source=quan_source))
 
         except :
             print('出现错误')
@@ -330,7 +333,7 @@ def handle_wechat_list(data, table,cursor):
                 else:
                     date = datetime.datetime.now().strftime('%Y-%m-%d')
                 #数据封装进字典
-                result_list.append(package_data_dict(title, link, content, date, source))
+                result_list.append(package_data_dict(title=title, url=link, content=content,date=date, source=source))
 
         except :
             print('出现错误')
@@ -339,9 +342,7 @@ def handle_wechat_list(data, table,cursor):
 def package_data_dict(title=None, url=None, img =None,content=None, date=None, source=None):
     temp_dict = {}
     keywords = TF_IDF(content,MAX_KEYWORDS)
-    print(keywords)
     if len(keywords) > 4:
-        print(keywords)
         temp_dict['title'] = title
         temp_dict['url'] = url
         temp_dict['content'] = content

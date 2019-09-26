@@ -11,7 +11,6 @@ import sys
 import os
 from .define import *
 
-w2v_path_model ='E:\推荐相关\model/w2v.model'
 # 加载进训练好的模型
 
 #model = gensim.models.Word2Vec.load(w2v_path_model)

@@ -15,7 +15,6 @@ from datetime import datetime
 from django.core.serializers import serialize
 
 
-
 ####################################根据部门和频道获取到推荐的新闻##################################################
 #根据部门和频道获
 def channel_branch(request):
@@ -44,12 +43,11 @@ def channel_branch(request):
     db_table = ChannelToDatabase.objects.filter(channel=channel).values_list('database')
     #根据数据库表名获取到模型
     mymodels = table_to_models(db_table[0][0])
+    print(mymodels)
 
     #时政频道特殊处理一下,先获取到一条置顶的新闻
     # if channel == CHANNEL_SZYW:
     #     result_list.extend(search_data_from_mysql(ChinaTopNews, n=1))
-    print('********')
-    print(result_list)
     #全国学会的用户在全国学会频道应该就只有他们自己的新闻，地方科协也一样
     if branch in num_xuehui() and channel == CHANNEL_QGXH:
         #根据部门ID取得部门名称
@@ -89,9 +87,12 @@ def diff_time(news_list):
     result_list = []
     for one_news in news_list:
         news_time = one_news['news_time']
-        diff = datetime.today().date() - datetime.strptime(news_time, '%Y-%m-%d').date()
-        if diff.days < WEEK:
-            result_list.append(one_news)
+        try:
+            diff = datetime.today().date() - datetime.strptime(news_time, '%Y-%m-%d').date()
+            if diff.days < WEEK:
+                result_list.append(one_news)
+        except:
+            pass
     return result_list
 
 #按照关键字进行排序，先检索和科协领导相关的
@@ -136,7 +137,6 @@ def search_data_from_mysql(myModel,n = MAX_NEWS_NUMBER,**kw):
             print(err)
     if data:
         for one in data:
-            print(one)
             temp_dict ={}
             news_id = str(myModel._meta.db_table) + '_' +str (one[0])
             temp_dict['news_id'] = news_id
@@ -158,7 +158,6 @@ def get_china_top_news(request):
         result_dict['img'] = str(chinaTopNews.img)
         result_dict['source'] = chinaTopNews.source
         result_dict['news_id'] = str(ChinaTopNews._meta.db_table) + '_'+ str(chinaTopNews.id)
-        print(result_dict)
         my = serialize('json', result_dict)
     except Exception as err:
         print('读取置顶中央新闻失败')
@@ -237,7 +236,6 @@ def record_user_image(user_id, cur_channel,keywords_list):
                 one_label_vec = cal_d2v(label)
                 #相似度大于0.8，
                 xsy = xiangsidu(cur_vec,one_label_vec)
-                print(xsy)
                 if  xsy> SIMILIAR :
                     simi_flag = True#有相似的
                     score += 10
@@ -312,12 +310,12 @@ def update_kexie_news_into_mysql(request):
     #return render(request,'news.html',{'news_list':news_list})
     return HttpResponse('科协官网新闻入库成功')
 
-####################################人民网数据更新入库函数###################
+####################################人民网时政数据更新入库函数###################
 def updata_get_rmw_news_data(request):
     try:
         news_list = spider.get_rmw_news_data()
     except Exception as err:
-        print('人民网获取数据错误')
+        print('人民网时政数据错误')
         news_list =None
         print(err)
     if news_list:
@@ -329,6 +327,22 @@ def updata_get_rmw_news_data(request):
                 print(e)
     return  HttpResponse('人名网时政新闻入库成功')
     #return render(request,'news.html',{'news_list':news_list})
+####################################人民网科技数据更新入库函数###################
+def update_get_rmw_kj_data(requsts):
+    try:
+        news_list = spider.get_rmw_kj_data()
+    except Exception as err:
+        print('人民网科技数据错误')
+        news_list =None
+        print(err)
+    if news_list:
+        for one_news in news_list:
+            news=  TECH(**one_news)
+            try:
+                news.save()
+            except Exception as e:
+                print(e)
+    return  HttpResponse('人民网科技数据入库成功')
 ####################################清洗科协的cast数据库中的科技热点和时政要闻入库###########################
 def hanle_cast_into_mysql(request):
     try:

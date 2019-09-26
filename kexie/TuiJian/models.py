@@ -7,8 +7,8 @@ from ckeditor_uploader.fields import RichTextUploadingField
 # Create your models here.
 class NewsBase(models.Model):
     title = models.CharField(max_length=255,null=False,unique=True,verbose_name='标题')
-    url = models.CharField(max_length=255,null=True,verbose_name='新闻url',blank=True)
-    img =  models.ImageField(max_length=255,null=True,verbose_name='图片',blank=True,upload_to='mgh')
+    url = models.CharField(max_length=255,null=True,verbose_name='新闻链接',blank=True)
+    img =  models.ImageField(max_length=255,null=True,verbose_name='新闻图片',blank=True,upload_to='mgh')
     content = RichTextUploadingField(null=False,verbose_name='新闻内容')
     author = models.CharField(max_length=255,null=True,verbose_name='作者',blank=True)
     keywords = models.CharField(max_length=255,null=True,verbose_name='关键字',blank=True)
@@ -24,13 +24,14 @@ class NewsBase(models.Model):
     hidden = models.BooleanField(default= True,verbose_name='是否推送',blank=True)
     #今天推送的新闻的排序，值越大，新闻的优先级越高
     today = models.IntegerField(default= 0,validators=[MaxValueValidator(100),MinValueValidator(0)],blank=True)
-    readonly_fields = ('image_data',)  # 必须加这行 否则访问编辑页面会报错
 
-
+    def __str__(self):
+        return self.title
 
     class Meta:
         managed =True
         abstract = True
+        ordering=['-time']
 
 class News(NewsBase):
     class Meta:

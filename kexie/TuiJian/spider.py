@@ -23,42 +23,48 @@ def get_rmw_news_data(url=r'http://www.people.com.cn/rss/rect_default.json',base
     result_list = []
     for one_news in news_list:
         try:
-            content ,time,img,source = get_rmw_content_time_img(one_news['newsLink'],base_url)
-            result_list.append(package_data_dict(title=one_news['title'],url=one_news['newsLink'],content=str(content),date=time,img=img,source=source))
+            result_list.append(get_rmw_data_dict(
+                news_url=one_news['newsLink'],
+                news_content=None,
+                news_title=one_news['title'],
+                news_img=None,
+                news_time=None,
+                news_source=None,
+                base_url=base_url))
         except Exception as err:
             print('爬取人民网时政新闻出错{0}'.format(one_news))
             print(err)
     return result_list
 
-def get_rmw_content_time_img(news_url,base_url):
-    print(news_url)
-    soup = rm_spider_head(news_url)
-    try:
-        news_content = soup.select('#rwb_zw')[0]
-        news_time_source = soup.select('.box01 > div')[0].text
-        news_time = news_time_source.split(' ')[0]
-        year,month,day = news_time[:4],news_time[5:7],news_time[8:10]
-        news_time =  year+'-'+ month+'-'+ day
-        news_source = news_time_source.split(' ')[-1].split('：')[-1]
-        if news_source == '闻':
-            news_source = '人民网-时政'
-        imgs = news_content.findAll('img')
-        img = deal_imgs_and_a(base_url, content=news_content, imgs=imgs)
-    except:
-        try:
-            news_content = soup.select('#picG')[0]
-            news_time_source = soup.select('.page_c')[1].text
-            news_source = news_time_source.split(' ')[0].split('：')[-1]
-            news_time = news_time_source.split(' ')[-1]
-            year,month,day = news_time[:4],news_time[5:7],news_time[8:10]
-            news_time =  year+'-'+ month+'-'+ day
-            img = ''
-        except:
-            news_content = ''
-            news_time =''
-            news_source=''
-            img =''
-    return news_content ,news_time,img,news_source
+# def get_rmw_content_time_img(news_url,base_url):
+#     print(news_url)
+#     soup = rm_spider_head(news_url)
+#     try:
+#         news_content = soup.select('#rwb_zw')[0]
+#         news_time_source = soup.select('.box01 > div')[0].text
+#         news_time = news_time_source.split(' ')[0]
+#         year,month,day = news_time[:4],news_time[5:7],news_time[8:10]
+#         news_time =  year+'-'+ month+'-'+ day
+#         news_source = news_time_source.split(' ')[-1].split('：')[-1]
+#         if news_source == '闻':
+#             news_source = '人民网-时政'
+#         imgs = news_content.findAll('img')
+#         img = deal_imgs_and_a(base_url, content=news_content, imgs=imgs)
+#     except:
+#         try:
+#             news_content = soup.select('#picG')[0]
+#             news_time_source = soup.select('.page_c')[1].text
+#             news_source = news_time_source.split(' ')[0].split('：')[-1]
+#             news_time = news_time_source.split(' ')[-1]
+#             year,month,day = news_time[:4],news_time[5:7],news_time[8:10]
+#             news_time =  year+'-'+ month+'-'+ day
+#             img = ''
+#         except:
+#             news_content = ''
+#             news_time =''
+#             news_source=''
+#             img =''
+#     return news_content ,news_time,img,news_source
 
 def rm_spider_head(url):
     headers = {"User_Agent": "Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; en) Presto/2.8.131 Version/11.11"}
@@ -70,6 +76,96 @@ def rm_spider_head(url):
         print('rm_spider_head出错')
         soup = None
     return soup
+##################################人民网科技数据爬虫##############################################
+def get_rmw_kj_data(url=r'http://scitech.people.com.cn/',base_url = r'http://scitech.people.com.cn'):
+    result_list = []
+    soup = rm_spider_head(url = url)
+    #最大的新闻
+    max_news_soup = soup.findAll(class_="title mt15")[0]
+    max_news_title = max_news_soup.select('h1 > a')[0].text
+    max_news_url = max_news_soup.select('h1 > a')[0]['href']
+
+    if max_news_url.startswith('/'):
+        new_max_news_url = base_url + max_news_url
+    else:
+        new_max_news_url = max_news_url
+    result_list.append(get_rmw_data_dict(
+        news_url=new_max_news_url,
+        news_content = None ,
+        news_title = max_news_title,
+        news_img =None,
+        news_time=None,
+        news_source=None,
+        base_url=base_url))
+    #轮播图爬取
+    lb_news_soup = soup.findAll(id='focus_list')[0].select('ul > li')
+    for one_lb in lb_news_soup:
+        lb_news_tilte = one_lb.text
+        lb_news_url = one_lb.select('li > a')[0]['href']
+        lb_news_img = one_lb.select('li > a > img')[0]['src']
+        if lb_news_img.startswith('/'):
+            new_lb_news_img = base_url + lb_news_img
+        else:
+            new_lb_news_img= lb_news_img
+        result_list.append(get_rmw_data_dict(
+        news_url=lb_news_url,
+        news_content = None ,
+        news_title = lb_news_tilte,
+        news_img =new_lb_news_img,
+        news_time=None,
+        news_source=None,
+        base_url=base_url))
+    #独家专稿 + 高端访谈 + 热点排行
+    djzg_news_soup = soup.findAll(class_='w1000 mt20 column_2 p9_con')[0].findAll(class_='right w310')[0].select('li')
+    for one_news in djzg_news_soup:
+        one_news_url = one_news.select('a')[0]['href']
+        if one_news_url.startswith('/'):
+            new_one_news_url = base_url + one_news_url
+        else:
+            new_one_news_url= one_news_url
+        result_list.append(get_rmw_data_dict(
+        news_url=new_one_news_url,
+        news_content = None ,
+        news_title = None,
+        news_img =None,
+        news_time=None,
+        news_source=None,
+        base_url=base_url))
+    return result_list
+
+def get_rmw_data_dict(news_url=None,news_content=None ,news_title=None,news_img=None,news_time=None,news_source=None,base_url=None):
+    soup = rm_spider_head(news_url)
+    try:
+        #标题失败
+        try:
+            news_title = soup.findAll(class_='clearfix w1000_320 text_title')[0].select('h1')[0].text
+        except:
+            news_title = news_title
+        #标题失败
+        try:
+            news_content = soup.select('#rwb_zw')[0]
+        except:
+            pass
+        news_time_source = soup.select('.box01 > div')[0].text
+        try:
+            news_time = news_time_source.split(' ')[0]
+            year, month, day = news_time[:4], news_time[5:7], news_time[8:10]
+            news_time = year + '-' + month + '-' + day
+        except:
+            news_time = datetime.datetime.now().strftime("%Y-%m-%d")
+        try:
+            news_source = news_time_source.split(' ')[-1].split('：')[-1]
+        except:
+            news_source = '人民网'
+        try:
+            imgs = news_content.findAll('img')
+            news_img = deal_imgs_and_a(base_url, content=news_content, imgs=imgs)
+        except:
+            news_img = ' '
+    except Exception as err:
+        print('爬取新闻{0}出错'.format(news_url))
+        pass
+    return package_data_dict(title=news_title, url=news_url, img=news_img, content=str(news_content), date=news_time, source=news_source, label=None)
 ##################################科协官网用selenium爬取##############################################
 def update_kexie_news():
     result_list =[]
@@ -133,7 +229,6 @@ def get_kx_data(browser, url,base_url,label):
     # 存放结果的列表
     temp_list = []
     if info_list_len :
-        print(info_list_len)
         for i in range(1, info_list_len):
             news_url = browser.find_element_by_xpath('//div[@class="bt-mod-wzpb-02"]/ul/li[{0}]//p/a'.format(i)).get_attribute('href')
             title = browser.find_element_by_xpath('//div[@class="bt-mod-wzpb-02"]/ul/li[{0}]//p'.format(i)).text
@@ -148,7 +243,6 @@ def get_kx_data(browser, url,base_url,label):
             content = soup.select('#zoom')[0]
             imgs = content.findAll('img')
             img_path = deal_imgs_and_a(base_url, content=content, imgs=imgs)
-            print(i,title)
             temp_list.append(package_data_dict(title=title, url=news_url, img =img_path,content=str(content), date=news_time, source="中国科协",label = label))
     return temp_list
 
@@ -347,6 +441,7 @@ def package_data_dict(title=None, url=None, img =None,content=None, date=None, s
     temp_dict = {}
     keywords = TF_IDF(content,MAX_KEYWORDS)
     if len(keywords) > 4:
+        print(title)
         temp_dict['title'] = title
         temp_dict['url'] = url
         temp_dict['content'] = content
