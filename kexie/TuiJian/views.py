@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse
 from . import spider
 from .models import *
 from . import initData
@@ -7,12 +7,10 @@ from . import  handle_cast
 import json
 from .define import *
 from .organiza import *
-from .cal_similar_news import *
 from .mongo import *
 from .cal_similar_news import  *
-import copy
 from datetime import datetime
-from django.core.serializers import serialize
+
 
 
 ####################################根据部门和频道获取到推荐的新闻##################################################
@@ -43,7 +41,6 @@ def channel_branch(request):
     db_table = ChannelToDatabase.objects.filter(channel=channel).values_list('database')
     #根据数据库表名获取到模型
     mymodels = table_to_models(db_table[0][0])
-    print(mymodels)
 
     #时政频道特殊处理一下,先获取到一条置顶的新闻
     # if channel == CHANNEL_SZYW:
@@ -65,12 +62,18 @@ def channel_branch(request):
     #按照当前用户的id，检索用户的历史记录，将得到的新闻进行算法排序,得到第一次的新闻推荐列表
     first_news_list = sort_all_news(recent_news_list,branch,channel)
 
-    #如果新闻数量不够，就按照时间去取
-    if  first_news_list:
-        num_news= len(first_news_list)
-    else:
-        num_news = 0
-    if num_news < MAX_NEWS_NUMBER:
+    #检测新闻数量是否足够，如果不够就在补充到足够的数量
+    get_enough_news(first_news_list,mymodels)
+
+    return HttpResponse(json.dumps(first_news_list, ensure_ascii=False))
+
+
+#补充到足够数量的新闻
+def get_enough_news(first_news_list,mymodels):
+    while(True):
+        num_news = len(first_news_list)
+        if num_news >= MAX_NEWS_NUMBER:
+            break
         n = MAX_NEWS_NUMBER - num_news
         #现获取到信息的id
         id_list =[]
@@ -79,8 +82,8 @@ def channel_branch(request):
             index = news_id.rindex("_")
             number = news_id[index + 1:]
             id_list.append(int(number))
-        first_news_list.extend(search_data_from_mysql(mymodels,n=n,id_list=id_list))
-    return HttpResponse(json.dumps(first_news_list, ensure_ascii=False))
+        first_news_list.extend(search_data_from_mysql(mymodels,n=n,id__list=id_list))
+
 
 #刚开始过滤掉一周以前的新闻
 def diff_time(news_list):
@@ -110,31 +113,20 @@ def get_all_channel():
     return result_list
 
 #按照条件数据，返回一个列表
-def search_data_from_mysql(myModel,n = MAX_NEWS_NUMBER,**kw):
+def search_data_from_mysql(myModel,n = MAX_NEWS_NUMBER,source = None,id__list=[]):
     result = []
-    if "source" in kw:
-        source = kw['source']
-    else:
-        source = ''
-    if 'id_list' in kw:
-        id_list = kw['id_list']
-    else:
-        id_list=[]
-    if not source :
+    data = None
+    if  source :
         try:
-            data = myModel.objects.filter(hidden=1).exclude(id__in= id_list).values_list('id','title','img','time','source','comment','like').order_by('-time')[:n]
+            data = myModel.objects.filter(hidden=1).exclude(id__in= id__list).values_list('id','title','img','time','source','comment','like').order_by('-time')[:n]
             ChannelToDatabase.objects.exclude()
         except Exception as err:
             print("{0}数据库检索不到数据".format(myModel._meta.db_table))
-            data = None
-            print(err)
     else:
         try:
             data = myModel.objects.filter(hidden=1).filter(source=source).values_list('id','title','img','time','source','comment','like').order_by('-time')[:n]
         except Exception as err:
             print("{0}数据库检索不到数据".format(myModel._meta.db_table))
-            data = None
-            print(err)
     if data:
         for one in data:
             temp_dict ={}
@@ -158,11 +150,9 @@ def get_china_top_news(request):
         result_dict['img'] = str(chinaTopNews.img)
         result_dict['source'] = chinaTopNews.source
         result_dict['news_id'] = str(ChinaTopNews._meta.db_table) + '_'+ str(chinaTopNews.id)
-        my = serialize('json', result_dict)
     except Exception as err:
         print('读取置顶中央新闻失败')
         print(err)
-    #return JsonResponse(result_dict, safe=False)
     return HttpResponse(json.dumps(result_dict, ensure_ascii=False))
 
 
@@ -175,11 +165,12 @@ def news_content(request):
     except Exception as err:
         user_id = None
         print(err)
-
+    #根据新闻id获取到新闻的详情
     news_info_list = accord_news_id_get_content_list(news_id)
+
     # 找到user_id才进行用户画像
-    db_table, number = get_table_and_id(news_id)
     if user_id:
+        db_table, number = get_table_and_id(news_id)
         # 只有科技热点和时政新闻记录用户画像
         if db_table == 'news' or db_table == 'tech':
             #根据db_table获取到频道
@@ -187,7 +178,7 @@ def news_content(request):
         else:
             cur_channel =None
         if cur_channel:
-                record_user_image(user_id, cur_channel,news_info_list['keywords_list'].split(' '))
+                record_user_image(user_id,cur_channel,news_info_list['keywords_list'].split(' '))
     #取出字典里的关键词列表
     news_info_list.pop("keywords_list")
     return HttpResponse(json.dumps(news_info_list, ensure_ascii=False))
@@ -216,43 +207,16 @@ def get_table_and_id(news_id):
     number = news_id[index+1:]
     return db_table,number
 
-
-def record_user_image(user_id, cur_channel,keywords_list):
+#记录用户画像
+def record_user_image(user_id,cur_channel,keywords_list):
+    #先检查mongondb中是否有该用户
     user = search_user_from_momgodb(id=user_id)
-    user_channel_list = user['channelList']
-    cur_vec = cal_d2v(keywords_list)
-    for one_channel in user_channel_list:
-        if one_channel['name'] == cur_channel:
-            #获取用户画像列表
-            user_label_list = one_channel['labelList']
-            #这里需要深拷贝
-            temp_list = copy.deepcopy(user_label_list)
-            #遍历用户画像，找到最相似的画像，如果大于0.8，就合并画像score+10，如果分数超过100，score =100
-            # ，否则就加入显得画像，并设置score=10,flag=0
-            simi_flag = False#是否有大于0.8的标志
-            for one_user_label in user_label_list:
-                label = one_user_label['label']
-                score = one_user_label['score']
-                one_label_vec = cal_d2v(label)
-                #相似度大于0.8，
-                xsy = xiangsidu(cur_vec,one_label_vec)
-                if  xsy> SIMILIAR :
-                    simi_flag = True#有相似的
-                    score += 10
-                    if score > 100:
-                        score = 100
-                        one_user_label['flag'] = 1#大于100就设置flag=1
-                    one_user_label['score'] = score
-            if not simi_flag:
-                #增加新的画像
-                temp_dict= {}
-                temp_dict['label'] = keywords_list
-                temp_dict['score'] = INIT_SCORE
-                temp_dict['flag'] = 0
-                temp_list.append(temp_dict)
-                one_channel['labelList'] = temp_list
-    #更新mongo数据库
-    update_mongo_accord_user_id(user_id,user['channelList'])
+    #如果没有此用户，则创建新的用户
+    if not user:
+        create_new_user_in_mongo(user_id,cur_channel,keywords_list)
+        return
+    #如果有用户，则更新用户的画像记录
+    update_uesr_iamges_accord_keywords_channel(user,cur_channel,keywords_list)
 
 ####################################新闻id返回相似新闻的列表####################################
 #返回相似的新闻列表
@@ -325,8 +289,8 @@ def updata_get_rmw_news_data(request):
                 news.save()
             except Exception as e:
                 print(e)
-    return  HttpResponse('人名网时政新闻入库成功')
-    #return render(request,'news.html',{'news_list':news_list})
+    #return  HttpResponse('人民网时政新闻入库成功')
+    return render(request,'news.html',{'news_list':news_list})
 ####################################人民网科技数据更新入库函数###################
 def update_get_rmw_kj_data(requsts):
     try:

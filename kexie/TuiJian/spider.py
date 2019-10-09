@@ -273,13 +273,30 @@ def spider_head(url):
 
 def get_content_time_img(news_url, base_url):
     soup = spider_head(news_url)
-    content = soup.select('#zoom')[0]
-    del content['style']
-    news_time = soup.select('.time > span')[0]
-    news_time.select('style')[0].extract()
-    news_time = news_time.text.split('：')[1]
-    imgs = content.findAll('img')
-    img_path = deal_imgs_and_a(base_url, imgs=imgs)
+    content = ''
+    news_time = ''
+    img_path = ''
+    try:
+        content = soup.select('#zoom')[0]
+    except:
+        pass
+    if content:
+        del content['style']
+        try:
+            news_time = soup.select('.time > span')[0]
+            news_time.select('style')[0].extract()
+            news_time = news_time.text.split('：')[1]
+        except:
+            news_time = str(datetime.datetime.now().strftime('%Y-%m-%d'))
+
+        imgs = content.findAll('img')
+        img_path = None
+        if imgs:
+            for img in imgs:
+                img_path = img['src']
+                if img_path[0] == '/':
+                    img_path = base_url + img_path
+                    img['src'] = img_path
     return news_time, img_path, content
 
 def get_kx_news_list(url, base_url):
@@ -290,21 +307,11 @@ def get_kx_news_list(url, base_url):
     replace_list = [e.strip().replace('\t', '') for e in re_result]
     repalce_list_len = len(replace_list)
     for i in range(1, repalce_list_len):
-        temp_dict = {}
         one_news_soup = BeautifulSoup(replace_list[i], 'lxml')
         news_url = base_url + one_news_soup.select('.list-title-bif > a')[0]['href']
         title = one_news_soup.select('.list-title > p')[0].text
         news_time, news_img, news_content = get_content_time_img(news_url, base_url)
-        temp_content = news_content
-        temp_dict['title'] = title
-        temp_dict['url'] = news_url
-        temp_dict['content'] = str(news_content)
-        temp_dict['img'] = news_img
-        temp_dict['time'] = news_time
-        temp_dict['author'] = ' '
-        temp_dict['keywords'] = ' '.join(TF_IDF(temp_content.text))
-        temp_dict['source'] = '中国科协'
-        result_list.append(temp_dict)
+        result_list.append(package_data_dict(title=title, url=news_url, img =news_img,content=news_content, date=news_time, source='中国科协',label =None))
     return result_list
 
 #处理图片链接和文件链接
@@ -424,11 +431,12 @@ def china_top_news():
     result_dict['img'] = img_list[0]
     result_dict['content'] = content
     result_dict['time'] = news_time
+    result_dict['source'] = '中国网新闻中心'
 
     return result_dict
 ####################################新闻TF_IDF的提取#############################################################
 #前n个用户关键字列表，关键字列表给用给用户画像
-def TF_IDF(content,n = 3):
+def TF_IDF(content,n = MAX_KEYWORDS):
     con = ' ' .join(re.findall('\w+', content))
     temp_list = jieba.analyse.extract_tags(con,topK = 10,withWeight = False,allowPOS=('n','ns','nr','nt','nz','v','vn'))
     if len(temp_list) > n:
@@ -444,7 +452,7 @@ def package_data_dict(title=None, url=None, img =None,content=None, date=None, s
         print(title)
         temp_dict['title'] = title
         temp_dict['url'] = url
-        temp_dict['content'] = content
+        temp_dict['content'] = str(content)
         temp_dict['img'] = img
         temp_dict['time'] = date
         temp_dict['author'] = ''

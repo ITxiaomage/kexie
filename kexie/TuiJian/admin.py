@@ -60,7 +60,12 @@ class  NewsBaseClass ( admin.ModelAdmin ) :
     #每页显示的数量
     list_per_page = 30
     #跳转连接
-    list_display_links = ['title','source','time']
+    #试着重新list_display_links
+    def my_time(self,request,obj):
+        return render(request,'news.html',{'news_list':obj})
+
+    list_display_links = ['title','source',"time"]
+
     #设置空值
     empty_value_display ='无'
     #操作选项
