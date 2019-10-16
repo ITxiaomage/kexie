@@ -1,15 +1,11 @@
 # -*-coding:utf-8 -*-
 # 根据新闻id推送相似的新闻列表
 import gensim
-import jieba
 import numpy as np
-import pymysql
 from operator import itemgetter
 from .spider import TF_IDF
 from .models import *
-import sys
-import os
-from .define import *
+
 
 # 加载进训练好的模型
 
@@ -40,11 +36,11 @@ def similar_news(news_id):
             temp_dict['news_source'] = one_data[2]
             temp_dict['news_title'] = one_data[3]
             temp_dict['news_img'] = one_data[4]
-            temp_dict['score'] = score
+            temp_dict['news_score'] = score
             result_list.append(temp_dict)
 
     # 按照相似度排序 ,只需要取前五个
-    temp_list = sorted(result_list, key=itemgetter('score'), reverse=True)
+    temp_list = sorted(result_list, key=itemgetter('news_score'), reverse=True)
     if len(temp_list) > 5:
         result_list = temp_list[:5]
     else:

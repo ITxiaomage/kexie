@@ -1,10 +1,22 @@
 import pymongo
-import json
 import copy
 from .define import *
 from .cal_similar_news import *
+
+#获取用户在channel的画像
+def get_user_images_accord_user_id_channel(user_id,channel):
+    #查找用户
+    user = search_user_from_momgodb(user_id)
+    if user :
+        channelList = user['channelList']
+        for one_channel  in channelList:
+            if one_channel['name'] == channel:
+                user_images_dict = one_channel
+    else:
+        user_images_dict = None
+    return user_images_dict
 #在mongo中创建新的用户
-def create_new_user_in_mongo(user_id,cur_channel,keywords_list):
+def create_new_user_in_mongo(user_id):
     client = pymongo.MongoClient()
     db = client[MONGODB_DB]
     collection = db[USER_IMAGE]
@@ -14,10 +26,6 @@ def create_new_user_in_mongo(user_id,cur_channel,keywords_list):
         collection.insert_one(user_init_images)
     except Exception as err:
         print('初始化一个新用户失败')
-    #
-    user = search_user_from_momgodb(user_id)
-    #更新频道的用户画像
-    update_uesr_iamges_accord_keywords_channel(user, cur_channel, keywords_list)
 
 #根据用户id查找用户信息
 def search_user_from_momgodb(id):
@@ -26,7 +34,7 @@ def search_user_from_momgodb(id):
     collection = db[USER_IMAGE]
     user = collection.find_one({"id": id})
     return user
-#根据用户id和频道的关键字列表更新用户画像
+#根据用户和频道的关键字列表更新用户画像
 def update_uesr_iamges_accord_keywords_channel(user,cur_channel,keywords_list):
     user_channel_list = user['channelList']
     cur_vec = cal_d2v(keywords_list)
@@ -43,7 +51,7 @@ def update_uesr_iamges_accord_keywords_channel(user,cur_channel,keywords_list):
                 label = one_user_label['label']
                 score = one_user_label['score']
                 one_label_vec = cal_d2v(label)
-                #相似度大于0.8，
+                #相似度大于SIMILIAR
                 xsy = xiangsidu(cur_vec,one_label_vec)
                 if  xsy> SIMILIAR :
                     simi_flag = True#有相似的
@@ -76,38 +84,11 @@ def update_mongo_accord_user_id(user,channel_list):
         print('更新mongodb中的用户画像失败')
         print(err)
 
-def search_kexie_leader_keywords(id = '2000000283'):
-    client = pymongo.MongoClient()
-    db = client[MONGODB_DB]
-    collection = db[ORG_IMAMGE]
-    leader_keywords_dict  = collection.find_one({"id":id})
-    return leader_keywords_dict
-
-def save_kexie_leader():
-    client = pymongo.MongoClient()
-    db = client[MONGODB_DB]
-    collection = db[ORG_IMAMGE]
-    collection.create_index([("id", 1)], unique=True)
-    data ={}
-    data['id'] = '2000000283'
-    temp_list =[]
-    for label,score in kexie_leader.items():
-        temp_dict ={}
-        temp_dict['label'] = label
-        temp_dict['score'] = score
-        temp_list.append(temp_dict)
-    data['keywords'] = temp_list
-    try:
-        collection.insert_one(data)
-    except Exception as err:
-        print('插入失败')
-        print(err)
-
 #根据uesr_id初始化一个用户
 def init_user_image(user_id):
+    #先去
     user_images= {
 	"id":user_id,
-	"department":[],
 	"channelList":[
 		{
 		"name":"时政要闻",
@@ -143,29 +124,3 @@ def init_user_image(user_id):
     }
     return user_images
 
-kexie_leader = {
-            "万钢":100,
-            "怀进鹏":100,
-            "徐延豪":100,
-            "孟庆海":100,
-            "束为":100,
-            "宋军":100,
-            "王守东":100,
-            "殷皓":100,
-            "马伟明":100,
-            "王曦":100,
-            "邓秀新":100,
-            "李华":100,
-            "李洪":100,
-            "李静海":100,
-            "何华武":100,
-            "沈岩":100,
-            "陈左宁":100,
-            "周守为":100,
-            "郑晓静":100,
-            "赵玉沛":100,
-            "施一公":100,
-            "袁亚湘":100,
-            "高松":100,
-            "潘建伟":100
-        }

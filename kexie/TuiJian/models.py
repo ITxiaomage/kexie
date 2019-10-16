@@ -87,15 +87,15 @@ class AgencyJg(AgencyBase):
 class AgencyDfkx(AgencyBase):
     class Meta:
         db_table = 'agency_dfkx'
-        verbose_name = "地方科协"
-        verbose_name_plural = "地方科协"
+        verbose_name = "地方科协组织"
+        verbose_name_plural = "地方科协组织"
 
 
 class AgencyQgxh(AgencyBase):
     class Meta:
         db_table = 'agency_qgxh'
-        verbose_name = "全国学会"
-        verbose_name_plural = "全国学会"
+        verbose_name = "全国学会组织"
+        verbose_name_plural = "全国学会组织"
 
 
 class ChannelToDatabase(models.Model):
@@ -106,4 +106,11 @@ class ChannelToDatabase(models.Model):
         verbose_name = "频道和数据库的映射"
         verbose_name_plural = "频道和数据库的映射"
 
-
+class KxLeaders(models.Model):
+    name = models.CharField(max_length=255,null=False,verbose_name='名字')
+    #可见
+    hidden = models.BooleanField(default=True, verbose_name='状态', blank=True)
+    class Meta:
+        db_table = 'leaders'
+        verbose_name = "科协领导"
+        verbose_name_plural = "科协领导"

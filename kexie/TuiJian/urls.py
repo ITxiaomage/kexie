@@ -1,14 +1,14 @@
 
 from django.urls import path
-from . import views,handle_cast
+from . import views
 
 
 app_name = "TuiJian"
 urlpatterns = [
 
 
-    # 根据channel和branch返回数据
-    path('getNewsList', views.channel_branch, name="newsList"),
+    # 返回用户在channel的新闻列表
+    path('getNewsList', views.get_user_news_list, name="newsList"),
 
     # 根据新闻id获取新闻内容
     path('newsContent', views.news_content,name = "newsContent"),
@@ -40,6 +40,9 @@ urlpatterns = [
     path('org', views.save_org_into_mysql, name="org"),
     #科协领导
     path('leader', views.save_leader, name="leader"),
+
+    #测试
+    path('test', views.test, name="test"),
 
 
 

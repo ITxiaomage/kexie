@@ -11,6 +11,8 @@ from django.contrib import admin, messages
 from django import forms
 from .forms import *
 import datetime
+
+
 class OrgBaseClass(admin.ModelAdmin):
     # 显示的字段
     list_display = ['number', 'department']
@@ -109,11 +111,24 @@ class  NewsBaseClass ( admin.ModelAdmin ) :
     def del_img(self,request,queryset):
         queryset.update(img=None)
         messages.success(request, "删除图片成功")
+    #     if 'cancel' in request.POST:
+    #         return HttpResponseRedirect(request.get_full_path())
+    #     else:
+    #         return render(request, 'updateData.html',
+    #                   {'objs': queryset, 'path': request.get_full_path(),
+    #                    'action': 'del_imgs', 'title': '批量删除新闻图片'})
+    #
+    # def del_imgs(self, request, queryset):
+    #     queryset.update(img=None)
+    #     messages.success(request, "删除图片成功")
+
+
     del_img.short_description = "删除图片"
     #批量改变优先级
     def change_priority(self,request,queryset):
         queryset.update(priority=0)
         messages.success(request, "优先级全部被设置为0")
+
     change_priority.short_description = "优先级调整为0"
 
     #批量修改数据的表单
@@ -196,6 +211,22 @@ class  NewsBaseClass ( admin.ModelAdmin ) :
     #         return forms.CharField(widget=forms.Textarea(attrs={'rows':'1', 'cols': '23'}))
     #     return super(NewsBaseClass, self).formfield_for_dbfield(db_field, **kwargs)
 
+@admin.register(KxLeaders)
+class KxLeadersClass(admin.ModelAdmin):
+    # 显示的字段
+    list_display = ['name', 'hidden']
+    #每页显示的数量
+    list_per_page = 100
+    list_display_links = ['name']
+    #操作选项
+    actions_on_top = True
+    #搜索器
+    search_fields = ['name']
+    #显示
+    fields = ['name', 'hidden']
+    #排序
+    ordering = ('id',)
+
 
 @admin.register(KX)
 class KXAdmin(NewsBaseClass):
@@ -227,16 +258,7 @@ class AgencyQgxhAdmin(OrgBaseClass):
 
 
 
-#admin.site.register(KX)
-# admin.site.register(News)
-# admin.site.register(DFKX)
-# admin.site.register(QGXH)
-# admin.site.register(TECH)
-# admin.site.register(ChinaTopNews)
-# admin.site.register(AgencyJg)
-# admin.site.register(AgencyDfkx)
-# admin.site.register(AgencyQgxh)
-# admin.site.register(ChannelToDatabase)
+
 admin.site.site_header = '新闻管理系统'
 admin.site.site_title = '新闻管理系统'
 admin.site.index_title = '欢迎使用新闻管理系统'

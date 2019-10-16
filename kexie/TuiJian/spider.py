@@ -141,11 +141,12 @@ def get_rmw_data_dict(news_url=None,news_content=None ,news_title=None,news_img=
             news_title = soup.findAll(class_='clearfix w1000_320 text_title')[0].select('h1')[0].text
         except:
             news_title = news_title
-        #标题失败
+        #内容
         try:
             news_content = soup.select('#rwb_zw')[0]
         except:
-            pass
+            news_content = news_content
+        #时间
         news_time_source = soup.select('.box01 > div')[0].text
         try:
             news_time = news_time_source.split(' ')[0]
@@ -153,10 +154,12 @@ def get_rmw_data_dict(news_url=None,news_content=None ,news_title=None,news_img=
             news_time = year + '-' + month + '-' + day
         except:
             news_time = datetime.datetime.now().strftime("%Y-%m-%d")
+        #新闻来源
         try:
             news_source = news_time_source.split(' ')[-1].split('：')[-1]
         except:
             news_source = '人民网'
+        #处理图像
         try:
             imgs = news_content.findAll('img')
             news_img = deal_imgs_and_a(base_url, content=news_content, imgs=imgs)
@@ -165,6 +168,14 @@ def get_rmw_data_dict(news_url=None,news_content=None ,news_title=None,news_img=
     except Exception as err:
         print('爬取新闻{0}出错'.format(news_url))
         pass
+    #del content['style']
+    #处理完content中图片的style
+    if news_content:
+        tables = news_content.findAll('table')
+        if tables:
+            for table in tables:
+                del table['width']
+
     return package_data_dict(title=news_title, url=news_url, img=news_img, content=str(news_content), date=news_time, source=news_source, label=None)
 ##################################科协官网用selenium爬取##############################################
 def update_kexie_news():
@@ -254,9 +265,9 @@ def get_kexie_news_data_list():
     yw_url = r'http://www.cast.org.cn/col/col80/index.html'
     tzgc_url = r'http://www.cast.org.cn/col/col457/index.html'
     base_url = r'http://www.cast.org.cn'
-    result_list.extend(get_kx_news_list(tt_url, base_url))
-    result_list.extend(get_kx_news_list(yw_url, base_url))
-    result_list.extend(get_kx_news_list(tzgc_url, base_url))
+    result_list.extend(get_kx_news_list(tt_url, base_url,'头条'))
+    result_list.extend(get_kx_news_list(yw_url, base_url,'要闻'))
+    result_list.extend(get_kx_news_list(tzgc_url, base_url,'通知'))
     return result_list
 
 def spider_head(url):
@@ -297,9 +308,25 @@ def get_content_time_img(news_url, base_url):
                 if img_path[0] == '/':
                     img_path = base_url + img_path
                     img['src'] = img_path
+        try:
+            a_hrefs = content.findAll('a')
+        except Exception as err:
+            print('文章中没有a链接')
+            a_hrefs = None
+        if a_hrefs:
+            for a_href in a_hrefs:
+                try:
+                    old_href = a_href['href']
+                except Exception as err:
+                    print('a标签没有href属性')
+                    print(err)
+                    continue
+                if old_href[0] == '/':
+                    new_href = base_url + old_href
+                    a_href['href'] = new_href
     return news_time, img_path, content
 
-def get_kx_news_list(url, base_url):
+def get_kx_news_list(url, base_url,label):
     result_list = []
     soup = spider_head(url=url)
     regx = re.compile(r'\<\!\[CDATA\[(.*?)\]\]\>', re.DOTALL)
@@ -311,7 +338,7 @@ def get_kx_news_list(url, base_url):
         news_url = base_url + one_news_soup.select('.list-title-bif > a')[0]['href']
         title = one_news_soup.select('.list-title > p')[0].text
         news_time, news_img, news_content = get_content_time_img(news_url, base_url)
-        result_list.append(package_data_dict(title=title, url=news_url, img =news_img,content=news_content, date=news_time, source='中国科协',label =None))
+        result_list.append(package_data_dict(title=title, url=news_url, img =news_img,content=news_content, date=news_time, source='中国科协',label =label))
     return result_list
 
 #处理图片链接和文件链接
