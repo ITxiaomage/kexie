@@ -182,9 +182,13 @@ def update_kexie_news():
     result_list =[]
     try:
         browser = init_chrome()
+        #新闻
         tt_url = r'http://www.cast.org.cn/col/col79/index.html'
         yw_url = r'http://www.cast.org.cn/col/col80/index.html'
         tzgc_url = r'http://www.cast.org.cn/col/col457/index.html'
+        #视频
+        xhfc_url = r'http://www.cast.org.cn/col/col106/index.html'
+        cmkx_url = r'http://www.cast.org.cn/col/col107/index.html'
         base_url = r'http://www.cast.org.cn'
         try:
             #头条
@@ -205,6 +209,17 @@ def update_kexie_news():
             print('通知出错')
             print(err)
             pass
+
+        try:
+            result_list.extend(get_kx_video_data(browser, xhfc_url, base_url, KXSP))
+        except Exception as err:
+            print('协会风采出错')
+            print(err)
+        try:
+            result_list.extend(get_kx_video_data(browser, cmkx_url, base_url, KXSP))
+        except Exception as err:
+            print('传媒风采')
+            print(err)
     except Exception as err:
         print('爬取科协新闻出错')
         print(err)
@@ -212,6 +227,7 @@ def update_kexie_news():
         browser.quit()
         return result_list
 
+#初始化浏览器
 def init_chrome():
     #创建对象
     option = webdriver.ChromeOptions()
@@ -224,6 +240,66 @@ def init_chrome():
     browser = webdriver.Chrome(options = option )
     return browser
 
+#爬取科协视频
+def get_video_content(browser,url,xpath):
+    browser.execute_script('window.open()')
+    browser.switch_to_window(browser.window_handles[1])
+    browser.get(url)
+    time.sleep(2)
+    try:
+        content = browser.find_element_by_xpath(xpath).get_attribute('src')
+    except:
+        print('获取内容错误。。。或者无内容')
+        content = ''
+    try:
+        video_time = browser.find_element_by_xpath('//div[@class="center"]//div[@class=" time"]//span').text
+        video_time = video_time.strip().split('：')[-1]
+    except Exception as err :
+        print(err)
+        video_time = str(datetime.datetime.now().strftime('%Y-%m-%d'))
+    browser.execute_script('window.close()')
+    browser.switch_to_window(browser.window_handles[0])
+    content = r"<video controls autoplay loop  src ='{0}'></video>".format(content)
+    return content,video_time
+#科协视频
+def get_kx_video_data(browser, url,base_url,label):
+    print('进入官网。。。')
+    try:
+        # 进入科协官网新闻
+        browser.get(url)
+        time.sleep(1)
+        # 获取列表
+        info_list = browser.find_elements_by_xpath('//div[@id="286"]//li')
+        info_list_len = len(info_list) + 1
+        print(info_list_len)
+    except:
+        info_list_len =0
+        print('进入科协官网出错。。。')
+
+    # 存放结果的列表
+    temp_list = []
+    if info_list_len :
+        for i in range(1, info_list_len):
+            news_url =  browser.find_element_by_xpath('//div[@id="286"]//li[{0}]/a'.format(i)).get_attribute('href')
+            title = browser.find_element_by_xpath('//div[@id="286"]//li[{0}]//span'.format(i)).text
+            img = browser.find_elements_by_xpath('//div[@id="286"]//li[{0}]/a//img'.format(i))[0].get_attribute('src')
+            xpath = r'//video'
+            content,video_time = get_video_content(browser,news_url,xpath)
+            # 获取新闻文本
+            try:
+                del content['width']
+            except:
+                pass
+            try:
+                del content['height']
+            except:
+                pass
+            print(title)
+            print(news_url)
+            temp_list.append(package_data_dict(title=title, url=news_url, img=img, content=str(content), date=video_time,source="中国科协", label=label))
+    print(temp_list)
+    return temp_list
+#科协数据
 def get_kx_data(browser, url,base_url,label):
     print('进入官网。。。')
     try:
@@ -265,9 +341,9 @@ def get_kexie_news_data_list():
     yw_url = r'http://www.cast.org.cn/col/col80/index.html'
     tzgc_url = r'http://www.cast.org.cn/col/col457/index.html'
     base_url = r'http://www.cast.org.cn'
-    result_list.extend(get_kx_news_list(tt_url, base_url,'头条'))
-    result_list.extend(get_kx_news_list(yw_url, base_url,'要闻'))
-    result_list.extend(get_kx_news_list(tzgc_url, base_url,'通知'))
+    result_list.extend(get_kx_news_list(tt_url, base_url,KXTT))
+    result_list.extend(get_kx_news_list(yw_url, base_url,KXYW))
+    result_list.extend(get_kx_news_list(tzgc_url, base_url,KXTZ))
     return result_list
 
 def spider_head(url):
@@ -475,17 +551,15 @@ def TF_IDF(content,n = MAX_KEYWORDS):
 def package_data_dict(title=None, url=None, img =None,content=None, date=None, source=None,label =None):
     temp_dict = {}
     keywords = TF_IDF(content,MAX_KEYWORDS)
-    if len(keywords) > 4:
-        print(title)
-        temp_dict['title'] = title
-        temp_dict['url'] = url
-        temp_dict['content'] = str(content)
-        temp_dict['img'] = img
-        temp_dict['time'] = date
-        temp_dict['author'] = ''
-        temp_dict['label'] = label
-        temp_dict['keywords'] = ' '.join(keywords)
-        temp_dict['source'] = source
+    temp_dict['title'] = title
+    temp_dict['url'] = url
+    temp_dict['content'] = str(content)
+    temp_dict['img'] = img
+    temp_dict['time'] = date
+    temp_dict['author'] = ''
+    temp_dict['label'] = label
+    temp_dict['keywords'] = ' '.join(keywords)
+    temp_dict['source'] = source
     return temp_dict
 
 

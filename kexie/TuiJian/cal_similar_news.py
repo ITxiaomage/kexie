@@ -5,12 +5,12 @@ import numpy as np
 from operator import itemgetter
 from .spider import TF_IDF
 from .models import *
+from .define import *
 
 
 # 加载进训练好的模型
-
-#model = gensim.models.Word2Vec.load(w2v_path_model)
-model =''
+model = gensim.models.Word2Vec.load(w2v_path_model)
+#model =''
 def similar_news(news_id):
     result_list = []
     # 根据id确定数据表和新闻id

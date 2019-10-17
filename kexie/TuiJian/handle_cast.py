@@ -59,18 +59,18 @@ def start():
     db_table = 'cast'
     host = "192.168.171.48"
     cast_db,cast_cursor = link_db(db_table,host)
-    print('开始处理media_content数据库的新闻')
-    #处理主流媒体
-    cast_table='media_content'
-
-    #处理科协
-    media= ["人民网-","央视网","中国日报网","中国经济网","中国青年网","光明网","澎湃新闻","中国科学院",
-         "中国科技网","中国新闻网","国际在线","央广网","北京时间",
-         "中央电视台","新华网"]
-    data = handle_media_content_list(media,cast_table,cast_cursor)
-
-    #保存数据到数据库
-    save_data_to_mysql(data,TECH)
+    # print('开始处理media_content数据库的新闻')
+    # #处理主流媒体
+    # cast_table='media_content'
+    #
+    # #处理科协
+    # media= ["人民网-","央视网","中国日报网","中国经济网","中国青年网","光明网","澎湃新闻","中国科学院",
+    #      "中国科技网","中国新闻网","国际在线","央广网","北京时间",
+    #      "中央电视台","新华网"]
+    # data = handle_media_content_list(media,cast_table,cast_cursor)
+    #
+    # #保存数据到数据库
+    # save_data_to_mysql(data,TECH)
     print('开始处理website数据库的新闻')
     # 处理website
     cast_table = 'website'
@@ -82,10 +82,10 @@ def start():
     data = handle_website_shenghui(shenghui(),cast_table,cast_cursor)
     save_data_to_mysql(data,DFKX)
 
-    #处理科协
-    media = ["创新战略研究院", "中国科普研究所", "农村专业技术服务中心", "青少年科技中心", "企业创新服务中心"]
-    data = handle_website_list(media,cast_table,cast_cursor)
-    save_data_to_mysql(data, KX)
+    # #处理科协
+    # media = ["创新战略研究院", "中国科普研究所", "农村专业技术服务中心", "青少年科技中心", "企业创新服务中心"]
+    # data = handle_website_list(media,cast_table,cast_cursor)
+    # save_data_to_mysql(data, KX)
 
     print('开始处理wechat数据库的新闻')
     #处理wechat
@@ -100,14 +100,14 @@ def start():
     data = handle_wechat_shenghui(shenghui(), cast_table, cast_cursor)
     save_data_to_mysql(data,DFKX)
 
-    # 处理科协
-    kx = [
-          "科协改革进行时", "创新研究", "中国绿发会", "企业创新最前沿",
-          "中国科协青少年科技中心", "今日科协", "学会服务365",
-          "青少年高校科学营", "创响中国",
-          "港澳台大学生暑期实习活动", ]
-    data = handle_wechat_list(kx, cast_table, cast_cursor)
-    save_data_to_mysql(data, KX)
+    # # 处理科协
+    # kx = [
+    #       "科协改革进行时", "创新研究", "中国绿发会", "企业创新最前沿",
+    #       "中国科协青少年科技中心", "今日科协", "学会服务365",
+    #       "青少年高校科学营", "创响中国",
+    #       "港澳台大学生暑期实习活动", ]
+    # data = handle_wechat_list(kx, cast_table, cast_cursor)
+    # save_data_to_mysql(data, KX)
 
     # # 处理科普
     # kp = ['掌上科技馆', '蝌蚪五线谱', '科学媒介中心', '数学英才', '气象e新', '知识产权杂志']
@@ -120,7 +120,7 @@ def start():
     # save_data_to_mysql()
 
     #增加一点时政新闻
-    sz_kj()
+    #sz_kj()
 
     close(cast_db, cast_cursor)
 

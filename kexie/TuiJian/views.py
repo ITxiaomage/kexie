@@ -10,11 +10,8 @@ from datetime import datetime
 from operator import itemgetter
 import json
 from simhash import Simhash
-
+from django.db.models import Q
 ####################################获取到推荐的新闻#########################
-
-def test(request):
-    return HttpResponse('这是测试')
 
 
 #########################根据用户id、department和用户记录返回新闻列表###############
@@ -61,9 +58,7 @@ def get_user_news_list(request):
         result_list = accord_user_id_get_news_list(user_id, department, channel)
     else:  # 没有用户id,就按照部门推送，不进行用户画像记录
         result_list = channel_branch(channel, branch)
-    if len(result_list) > 10:
-        result_list = result_list[:10]
-    #return render(request,'news.html',{'news_list':result_list})
+    print(len(result_list))
     return HttpResponse(json.dumps(result_list, ensure_ascii=False))
 
 
@@ -72,9 +67,9 @@ def accord_user_id_get_news_list(user_id, department, channel):
     # 在时政要闻和科技热点进行个性化推荐
     if channel == CHANNEL_SZYW or channel == CHANNEL_KJRD:
         result_list = individual(user_id, channel)
-    # 中国科协按照时间检索，但是前三条是科协领导人的新闻
+    # 中国科协
     elif channel == CHANNEL_ZGKX:
-        result_list = get_zgkx_news_list()
+        result_list = search_kx_data_from_mysql()
     # 当前频道为全国学会，并且用户department有学会，就按照department，否则按时间检索
     elif channel == CHANNEL_QGXH:
         result_list = get_qgxh_news_list(department)
@@ -184,33 +179,33 @@ def simhash_remove_similar(news_list):
             result_list.append(news)
     return result_list
 
-# 中国科协频道算法
-def get_zgkx_news_list():
-    # 找到mysql中科协领导人
-    kx_leaders_list = get_kx_leaders_from_mysql()
-    # 从数据库取出最新的数据
-    news_list = search_data_from_mysql(KX, MAX_SEARCH_NEWS)
-    # 如果取到的日期和当前的日期之间相差7天以上就删除
-    recent_news_list = diff_time(news_list)
-
-    # 检索出科协领导人的新闻，然后按照时间排序,得到第一次的新闻推荐列表
-    first_news_list = sort_kx_news(news_list=recent_news_list, keywords_list=kx_leaders_list)
-
-    # 科协领导人的新闻最多三条
-    if len(first_news_list) > 3:
-        first_news_list = first_news_list[:3]
-    else:
-        first_news_list = first_news_list
-    final_result_list = []
-    while True:
-        # 在这里将结果利用simhash去重
-        final_result_list.extend(simhash_remove_similar(first_news_list))
-        #新闻数量不够就一直补充
-        if len(final_result_list)  < MAX_NEWS_NUMBER:
-            get_enough_news(final_result_list,KX)
-        else:
-            break
-    return final_result_list
+# # 中国科协频道算法
+# def get_zgkx_news_list():
+#     # 找到mysql中科协领导人
+#     kx_leaders_list = get_kx_leaders_from_mysql()
+#     # 从数据库取出最新的数据
+#     news_list = search_data_from_mysql(KX, MAX_SEARCH_NEWS)
+#     # 如果取到的日期和当前的日期之间相差7天以上就删除
+#     recent_news_list = diff_time(news_list)
+#
+#     # 检索出科协领导人的新闻，然后按照时间排序,得到第一次的新闻推荐列表
+#     first_news_list = sort_kx_news(news_list=recent_news_list, keywords_list=kx_leaders_list)
+#
+#     # 科协领导人的新闻最多三条
+#     if len(first_news_list) > 3:
+#         first_news_list = first_news_list[:3]
+#     else:
+#         first_news_list = first_news_list
+#     final_result_list = []
+#     while True:
+#         # 在这里将结果利用simhash去重
+#         final_result_list.extend(simhash_remove_similar(first_news_list))
+#         #新闻数量不够就一直补充
+#         if len(final_result_list)  < MAX_NEWS_NUMBER:
+#             get_enough_news(final_result_list,KX)
+#         else:
+#             break
+#     return final_result_list
 
 
 
@@ -310,6 +305,12 @@ def channel_branch(channel, branch):
     # 时政频道特殊处理一下,先获取到一条置顶的新闻
     # if channel == CHANNEL_SZYW:
     #     result_list.extend(search_data_from_mysql(ChinaTopNews, n=1))
+
+    #中国科协的频道单独推送
+    # 如果是中国科协频道，那么必须由三部分组成：要闻、视频和通知
+    if channel == CHANNEL_ZGKX:
+        result_list.extend(search_kx_data_from_mysql())
+        return  result_list
     # 全国学会的用户在全国学会频道应该就只有他们自己的新闻，地方科协也一样
     if branch in num_xuehui() and channel == CHANNEL_QGXH:
         # 根据部门ID取得部门名称
@@ -331,6 +332,34 @@ def channel_branch(channel, branch):
     get_enough_news(recent_news_list, mymodels)
     return recent_news_list
 
+#搜索科协的数据
+def search_kx_data_from_mysql():
+    result_list =[]
+    #要闻五条search_data_from_mysql
+    result_list.extend(search_data_from_mysql(myModel=KX,n=LIMIT_NEWS,label=KXTT))
+    result_list.extend(search_data_from_mysql(myModel=KX, n=LIMIT_NEWS, label=KXYW))
+    #就这十条数据，还剩按照领导人数据排个序吧
+    kx_leaders_list = get_kx_leaders_from_mysql()
+    first_news_list = sort_kx_news(news_list=result_list, keywords_list=kx_leaders_list)
+
+    #标签统一为要闻
+    for one_news in first_news_list:
+        one_news['label'] = KXYW
+    if len(first_news_list) > LIMIT_NEWS:
+        result_list = first_news_list[:LIMIT_NEWS]
+    else:
+        result_list = first_news_list
+    #通知五条
+    result_list.extend(search_data_from_mysql(myModel=KX, n=LIMIT_NEWS, label=KXTZ))
+    #视频五条
+    result_list.extend(search_data_from_mysql(myModel=KX, n=LIMIT_NEWS, label=KXSP))
+    # 按照时间检索找五张img字段不为空的数据,用于轮播图
+    temp_list= search_data_from_mysql(myModel=KX, n=LIMIT_NEWS, LB = True)
+    #标签统一为要闻
+    for one_news in temp_list:
+        one_news['label'] = LB
+    result_list.extend(temp_list)
+    return result_list
 
 # 补充到足够数量的新闻
 def get_enough_news(news_list, mymodels):
@@ -378,22 +407,36 @@ def get_all_channel():
 
 
 # 按照条件数据，返回一个列表
-def search_data_from_mysql(myModel, n=MAX_NEWS_NUMBER, source=None, id__list=[]):
+def search_data_from_mysql(myModel, n=MAX_NEWS_NUMBER, source=None, id__list=[],label =None,LB = False):
     result = []
     data = None
-    if not source:
+    #先按照科协的label检索
+    if label:
+        try:
+            data = myModel.objects.filter(hidden=1).filter(label = label).exclude(id__in=id__list).values_list('id', 'title', 'img', 'time',
+                                                                                         'source', 'comment', 'like',
+                                                                                         'priority','label').order_by('-time')[:n]
+        except Exception as err:
+            print("{0}数据库检索不到数据".format(myModel._meta.db_table))
+    elif LB:#找轮播图
+        try:
+            data = KX.objects.filter(~Q(img=None)).filter(~Q(img='')).values_list('id', 'title', 'img', 'time',
+                                                                                         'source', 'comment', 'like',
+                                                                                         'priority','label').order_by('-time')[:n]
+        except Exception as err:
+            print("{0}数据库检索不到数据".format(myModel._meta.db_table))
+    elif not source:
         try:
             data = myModel.objects.filter(hidden=1).exclude(id__in=id__list).values_list('id', 'title', 'img', 'time',
                                                                                          'source', 'comment', 'like',
-                                                                                         'priority').order_by('-time')[
-                   :n]
+                                                                                         'priority','label').order_by('-time')[:n]
         except Exception as err:
             print("{0}数据库检索不到数据".format(myModel._meta.db_table))
     else:
         try:
             data = myModel.objects.filter(hidden=1).filter(source=source).values_list('id', 'title', 'img', 'time',
                                                                                       'source', 'comment', 'like',
-                                                                                      'priority').order_by('-time')[:n]
+                                                                                      'priority','label').order_by('-time')[:n]
         except Exception as err:
             print("{0}数据库检索不到数据".format(myModel._meta.db_table))
             print(err)
@@ -409,6 +452,7 @@ def search_data_from_mysql(myModel, n=MAX_NEWS_NUMBER, source=None, id__list=[])
             temp_dict['comment'] = one[5]
             temp_dict['like'] = one[6]
             temp_dict['priority'] = one[7]
+            temp_dict['label'] = one[8]
             result.append(temp_dict)
     return result
 
@@ -506,7 +550,7 @@ def similar_news_list(request):
 
 
 #######################置顶的时政新闻入库###################
-def update_china_top_news(request):
+def update_china_top_news():
     # 置顶的时政新闻
     try:
         data = spider.china_top_news()
@@ -523,11 +567,10 @@ def update_china_top_news(request):
         except Exception as err:
             print('插入置顶的时政新闻失败')
             print(err)
-    return HttpResponse('置顶的时政新闻入库成功')
 
 
 ####################################科协官网数据入库###################
-def update_kexie_news_into_mysql(request):
+def update_kexie_news_into_mysql():
     try:
         news_list = spider.update_kexie_news()
     except Exception as err:
@@ -547,12 +590,11 @@ def update_kexie_news_into_mysql(request):
                 print('Successful')
             except Exception as e:
                 print(e)
-    return render(request,'news.html',{'news_list':news_list})
-    #return HttpResponse('科协官网新闻入库成功')
+    #return HttpResponse('成功')
 
 
 ####################################人民网时政数据更新入库函数###################
-def updata_get_rmw_news_data(request):
+def updata_get_rmw_news_data():
     try:
         news_list = spider.get_rmw_news_data()
     except Exception as err:
@@ -567,12 +609,12 @@ def updata_get_rmw_news_data(request):
                 print('Successful')
             except Exception as e:
                 print(e)
-    return HttpResponse('人民网时政新闻入库成功')
+    #return HttpResponse('人民网时政新闻入库成功')
     #return render(request,'news.html',{'news_list':news_list})
 
 
 ####################################人民网科技数据更新入库函数###################
-def update_get_rmw_kj_data(requsts):
+def update_get_rmw_kj_data():
     try:
         news_list = spider.get_rmw_kj_data()
     except Exception as err:
@@ -587,11 +629,11 @@ def update_get_rmw_kj_data(requsts):
                 print('Successful')
             except Exception as e:
                 print(e)
-    return HttpResponse('人民网科技数据入库成功')
+    #return HttpResponse('人民网科技数据入库成功')
 
 
 ####################################清洗科协的cast数据库中的科技热点和时政要闻入库###########################
-def hanle_cast_into_mysql(request):
+def hanle_cast_into_mysql():
     try:
         handle_cast.start()
     except Exception as err:
@@ -602,7 +644,6 @@ def hanle_cast_into_mysql(request):
     except Exception as e:
         print("时政和科技热点数据入库出错")
         print(e)
-    return HttpResponse('cast数据库清洗入库成功')
 
 
 ####################################初始化相关函数###########################################

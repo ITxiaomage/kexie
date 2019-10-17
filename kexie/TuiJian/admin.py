@@ -108,22 +108,13 @@ class  NewsBaseClass ( admin.ModelAdmin ) :
     # 第一个参数是模型管理类，第二个request是请求，第三个queryset表示你选中的所有记录，
     # 这个函数里面会处理所有选中的queryset，所以要在操作之前用搜索或者过滤来选出需要修改的记录
     #批量删除删除图片
-    def del_img(self,request,queryset):
+
+    def del_imgs(self, request, queryset):
         queryset.update(img=None)
         messages.success(request, "删除图片成功")
-    #     if 'cancel' in request.POST:
-    #         return HttpResponseRedirect(request.get_full_path())
-    #     else:
-    #         return render(request, 'updateData.html',
-    #                   {'objs': queryset, 'path': request.get_full_path(),
-    #                    'action': 'del_imgs', 'title': '批量删除新闻图片'})
-    #
-    # def del_imgs(self, request, queryset):
-    #     queryset.update(img=None)
-    #     messages.success(request, "删除图片成功")
 
+    del_imgs.short_description = "删除图片"
 
-    del_img.short_description = "删除图片"
     #批量改变优先级
     def change_priority(self,request,queryset):
         queryset.update(priority=0)
@@ -136,6 +127,7 @@ class  NewsBaseClass ( admin.ModelAdmin ) :
         _selected_action = forms.CharField(widget=forms.MultipleHiddenInput)
         change= forms.CharField(max_length=255,required=False)
         change.label="请填写需要修改的值"
+
     #修改时间
     def update_time(self, request, queryset):
         return self.update_data(request=request, queryset=queryset,value='时间')
@@ -203,7 +195,7 @@ class  NewsBaseClass ( admin.ModelAdmin ) :
                               {'objs': queryset, 'form': form, 'path':request.get_full_path(),
                                                        'action': 'update_priority', 'title': '批量修改新闻推荐优先级'.format('..')})
     #自定义的action
-    actions = [del_img,change_priority,update_time,update_source,update_priority]
+    actions = [del_imgs,change_priority,update_time,update_source,update_priority]
     # #设置字段的显示高和宽，这里重新后，详情页面字段不显示verbose_name，并且设置的blank属性就失效了
     # def formfield_for_dbfield(self, db_field, **kwargs):
     #     # This method will turn all TextFields into giant TextFields
