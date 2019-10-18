@@ -18,7 +18,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 # Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
+# See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/pip
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = '&m&mooax0_dt=$n90r=l)bazb8y@(m&s9-nhc9=g3+b)1hkiqa'
@@ -81,7 +81,7 @@ WSGI_APPLICATION = 'kexie.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',   # 数据库引擎
-        'NAME': 'kexie_2',         # 要存储数据的库名，事先要创建之
+        'NAME': 'kexie',         # 要存储数据的库名，事先要创建之
         'USER': 'root',         # 数据库用户名
         'PASSWORD': 'password',     # 密码
         'HOST': 'localhost',    # 主机
@@ -146,9 +146,9 @@ CKEDITOR_IMAGE_BACKEND = "pillow"
 CKEDITOR_CONFIGS = {
     # django-ckeditor默认使用default配置
     'default': {
-        # 编辑器宽度自适应
-        'width':'auto',
-        'height':'auto',
+        # 编辑器宽度
+        'width':'1000px',
+        'height':'500px',
         # tab键转换空格数
         'tabSpaces': 4,
         # 工具栏风格
@@ -157,3 +157,4 @@ CKEDITOR_CONFIGS = {
         'extraPlugins': ','.join(['codesnippet']),
     }
 }
+

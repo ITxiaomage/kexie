@@ -7,8 +7,8 @@ from ckeditor_uploader.fields import RichTextUploadingField
 # Create your models here.
 class NewsBase(models.Model):
     title = models.CharField(max_length=255,null=False,unique=True,verbose_name='标题')
-    url = models.CharField(max_length=255,null=True,verbose_name='新闻url',blank=True)
-    img =  models.ImageField(max_length=255,null=True,verbose_name='图片',blank=True,upload_to='mgh')
+    url = models.CharField(max_length=255,null=True,verbose_name='新闻链接',blank=True)
+    img =  models.ImageField(max_length=255,null=True,verbose_name='新闻图片',blank=True,upload_to='mgh')
     content = RichTextUploadingField(null=False,verbose_name='新闻内容')
     author = models.CharField(max_length=255,null=True,verbose_name='作者',blank=True)
     keywords = models.CharField(max_length=255,null=True,verbose_name='关键字',blank=True)
@@ -24,13 +24,14 @@ class NewsBase(models.Model):
     hidden = models.BooleanField(default= True,verbose_name='是否推送',blank=True)
     #今天推送的新闻的排序，值越大，新闻的优先级越高
     today = models.IntegerField(default= 0,validators=[MaxValueValidator(100),MinValueValidator(0)],blank=True)
-    readonly_fields = ('image_data',)  # 必须加这行 否则访问编辑页面会报错
 
-
+    def __str__(self):
+        return self.title
 
     class Meta:
         managed =True
         abstract = True
+        ordering=['-time']
 
 class News(NewsBase):
     class Meta:
@@ -86,15 +87,15 @@ class AgencyJg(AgencyBase):
 class AgencyDfkx(AgencyBase):
     class Meta:
         db_table = 'agency_dfkx'
-        verbose_name = "地方科协"
-        verbose_name_plural = "地方科协"
+        verbose_name = "地方科协组织"
+        verbose_name_plural = "地方科协组织"
 
 
 class AgencyQgxh(AgencyBase):
     class Meta:
         db_table = 'agency_qgxh'
-        verbose_name = "全国学会"
-        verbose_name_plural = "全国学会"
+        verbose_name = "全国学会组织"
+        verbose_name_plural = "全国学会组织"
 
 
 class ChannelToDatabase(models.Model):
@@ -105,4 +106,11 @@ class ChannelToDatabase(models.Model):
         verbose_name = "频道和数据库的映射"
         verbose_name_plural = "频道和数据库的映射"
 
-
+class KxLeaders(models.Model):
+    name = models.CharField(max_length=255,null=False,verbose_name='名字')
+    #可见
+    hidden = models.BooleanField(default=True, verbose_name='状态', blank=True)
+    class Meta:
+        db_table = 'leaders'
+        verbose_name = "科协领导"
+        verbose_name_plural = "科协领导"
