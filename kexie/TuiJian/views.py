@@ -256,7 +256,7 @@ def get_qgxh_news_list(department):
     # 如果result_list为空，说明用户没有在全国学会兼职，那么返回数据库最新的新闻
     if not result_list:
         result_list.extend(search_data_from_mysql(QGXH))
-    final_result_list = []
+    final_result_list = sorted(result_list, key=itemgetter('priority', 'news_time'), reverse=True)
     while True:
         # 在这里将结果利用simhash去重
         final_result_list.extend(simhash_remove_similar(result_list))
@@ -264,6 +264,7 @@ def get_qgxh_news_list(department):
         if len(final_result_list)  < MAX_NEWS_NUMBER:
             get_enough_news(final_result_list,QGXH)
         else:
+            final_result_list = final_result_list[:MAX_NEWS_NUMBER]
             break
     return final_result_list
 
@@ -282,7 +283,7 @@ def get_dfkx_news_list(department):
     # 如果result_list为空，说明用户没有在地方科协兼职，那么返回数据库最新的新闻
     if not result_list:
         result_list.extend(search_data_from_mysql(DFKX))
-    final_result_list = []
+    final_result_list = sorted(result_list, key=itemgetter('priority', 'news_time'), reverse=True)
     while True:
         # 在这里将结果利用simhash去重
         final_result_list.extend(simhash_remove_similar(result_list))
@@ -290,6 +291,7 @@ def get_dfkx_news_list(department):
         if len(final_result_list)  < MAX_NEWS_NUMBER:
             get_enough_news(final_result_list,DFKX)
         else:
+            final_result_list = final_result_list[:MAX_NEWS_NUMBER]
             break
     return final_result_list
 
@@ -330,7 +332,11 @@ def channel_branch(channel, branch):
 
     # 检测新闻数量是否足够，如果不够就在补充到足够的数量,得到第二个新闻推荐列表
     get_enough_news(recent_news_list, mymodels)
-    return recent_news_list
+    if len(recent_news_list) >= MAX_NEWS_NUMBER:
+        final_result_list = recent_news_list[:MAX_NEWS_NUMBER]
+    else:
+        final_result_list = recent_news_list
+    return final_result_list
 
 #搜索科协的数据
 def search_kx_data_from_mysql():

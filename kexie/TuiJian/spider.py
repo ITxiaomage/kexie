@@ -550,7 +550,10 @@ def TF_IDF(content,n = MAX_KEYWORDS):
 ####################################将新闻相关信息打包为一个字典#############################################################
 def package_data_dict(title=None, url=None, img =None,content=None, date=None, source=None,label =None):
     temp_dict = {}
-    keywords = TF_IDF(content,MAX_KEYWORDS)
+    if label == KXSP:#视频就是以标题作为关键字
+        keywords = TF_IDF(title, MAX_KEYWORDS)
+    else:
+        keywords = TF_IDF(content,MAX_KEYWORDS)
     temp_dict['title'] = title
     temp_dict['url'] = url
     temp_dict['content'] = str(content)

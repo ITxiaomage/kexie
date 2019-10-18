@@ -3,6 +3,9 @@
 import gensim
 import numpy as np
 from operator import itemgetter
+
+from django.shortcuts import get_object_or_404
+
 from .spider import TF_IDF
 from .models import *
 from .define import *
@@ -18,28 +21,56 @@ def similar_news(news_id):
     table = news_id[:index]
     number = news_id[index + 1:]
     mymodels = table_to_models(table)
-    #当前新闻的内容
-    content = mymodels.objects.filter(id=number).values_list('content')
-    cur_keywords =  TF_IDF(str(content),10)
-    cur_vec = cal_d2v(cur_keywords)
-
-    data = mymodels.objects.all().order_by('-time')[:100].values_list('id','time','source','title','img','content')
-    for one_data in data:
-        print(one_data)
-        temp_keywords = TF_IDF(str(one_data[5]),10)
-        temp_vec = cal_d2v(temp_keywords)
-        score = xiangsidu(cur_vec, temp_vec)
-        if score > 0.5:
+    try:
+        news_info = mymodels.objects.filter(id=number).values_list('title', 'content', 'label')
+    except :
+        news_info = None
+    if news_info:
+        for one in news_info:
+            title = one[0]
+            content = one[1]
+            label = one[2]
+    else:
+        return []
+    if label == '视频':
+        video_data = mymodels.objects.filter(label='视频').order_by('-time')[:100].values_list('id', 'time', 'source', 'title',
+                                                                                  'img', 'content')
+        cur_keywords = TF_IDF(str(title), 10)
+        cur_vec = cal_d2v(cur_keywords)
+        for one_data in video_data:
             temp_dict = {}
-            temp_dict['news_id'] = one_data[0]
-            temp_dict['news_time'] = one_data[1]
-            temp_dict['news_source'] = one_data[2]
-            temp_dict['news_title'] = one_data[3]
-            temp_dict['news_img'] = one_data[4]
-            temp_dict['news_score'] = score
-            result_list.append(temp_dict)
+            temp_keywords = TF_IDF(str(one_data[3]), 10)
+            temp_vec = cal_d2v(temp_keywords)
+            score = xiangsidu(cur_vec, temp_vec)
+            if score > 0.2:
+                temp_dict['news_id'] = one_data[0]
+                temp_dict['news_time'] = one_data[1]
+                temp_dict['news_source'] = one_data[2]
+                temp_dict['news_title'] = one_data[3]
+                temp_dict['news_img'] = one_data[4]
+                temp_dict['news_score'] = score
+                result_list.append(temp_dict)
+    else:
+        #当前新闻的内容
+        content_data = mymodels.objects.all().order_by('-time')[:100].values_list('id', 'time', 'source', 'title',
+                                                                                  'img', 'content')
+        cur_keywords =  TF_IDF(str(content),10)
+        cur_vec = cal_d2v(cur_keywords)
+        for one_data in content_data:
+            temp_dict = {}
+            temp_keywords = TF_IDF(str(one_data[5]),10)
+            temp_vec = cal_d2v(temp_keywords)
+            score = xiangsidu(cur_vec, temp_vec)
+            if score > 0.5:
+                temp_dict['news_id'] = one_data[0]
+                temp_dict['news_time'] = one_data[1]
+                temp_dict['news_source'] = one_data[2]
+                temp_dict['news_title'] = one_data[3]
+                temp_dict['news_img'] = one_data[4]
+                temp_dict['news_score'] = score
+                result_list.append(temp_dict)
 
-    # 按照相似度排序 ,只需要取前五个
+        # 按照相似度排序 ,只需要取前五个
     temp_list = sorted(result_list, key=itemgetter('news_score'), reverse=True)
     if len(temp_list) > 5:
         result_list = temp_list[:5]

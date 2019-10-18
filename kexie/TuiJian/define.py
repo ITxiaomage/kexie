@@ -64,7 +64,7 @@ MIN_SIMILIAR = 0.2
 INIT_SCORE = 50
 
 #汉明距离值
-SIMHASH_DISTINCT = 10
+SIMHASH_DISTINCT = 20
 kexie_leader = {
             "万钢":100,
             "怀进鹏":100,
