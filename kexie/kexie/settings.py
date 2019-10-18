@@ -41,7 +41,6 @@ INSTALLED_APPS = [
     'TuiJian',
     'ckeditor',
     'ckeditor_uploader', # 富文本编辑器上传图片模块
-    "django_apscheduler",#定时任务
 ]
 
 MIDDLEWARE = [
@@ -82,7 +81,7 @@ WSGI_APPLICATION = 'kexie.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',   # 数据库引擎
-        'NAME': 'kexie',         # 要存储数据的库名，事先要创建之
+        'NAME': 'kexie_2',         # 要存储数据的库名，事先要创建之
         'USER': 'root',         # 数据库用户名
         'PASSWORD': 'password',     # 密码
         'HOST': 'localhost',    # 主机

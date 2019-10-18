@@ -11,33 +11,52 @@ from operator import itemgetter
 import json
 from simhash import Simhash
 from django.db.models import Q
-from apscheduler.schedulers.background import BackgroundScheduler
-from django_apscheduler.jobstores import DjangoJobStore ,register_events,register_job
+
 ####################################定时任务#########################
+from apscheduler.scheduler import Scheduler
+sched = Scheduler()  # 实例化，固定格式
+
+
+@sched.interval_schedule(hours=60)  # 装饰器，seconds=60意思为该函数为1分钟运行一次
+def mytask():
+    print('定时任务启动,时间为：{0}'.format(datetime.now().strftime("%Y-%m-%d")))
+    # 中央新闻
+    update_china_top_news()
+    # 科协官网
+    update_kexie_news_into_mysql()
+    # cast数据库
+    hanle_cast_into_mysql()
+    # 人名网时政
+    updata_get_rmw_news_data()
+    # 人民网科技
+    update_get_rmw_kj_data()
+    print('定时任务结束,时间为：{0}'.format(datetime.now().strftime("%Y-%m-%d")))
+sched.start()  # 启动该脚本
+
 #开启定时任务
-try:
-    #实例化调度器
-    scheduler = BackgroundScheduler()
-    scheduler.add_jobstore(DjangoJobStore(),'default')
-    @register_job(scheduler,"interval",hours = 8)
-    def my_job():
-        print('定时任务启动,时间为：{0}'.format(datetime.datetime.now().strftime("%Y-%m-%d")))
-        # 中央新闻
-        update_china_top_news()
-        # 科协官网
-        update_kexie_news_into_mysql()
-        # cast数据库
-        hanle_cast_into_mysql()
-        # 人名网时政
-        updata_get_rmw_news_data()
-        # 人民网科技
-        update_get_rmw_kj_data()
-        print('定时任务结束,时间为：{0}'.format(datetime.datetime.now().strftime("%Y-%m-%d")))
-    register_events(scheduler)
-    scheduler.start()
-except Exception as err:
-    print(err)
-    scheduler.shutdown()
+# try:
+#     #实例化调度器
+#     scheduler = BackgroundScheduler()
+#     scheduler.add_jobstore(DjangoJobStore(),'default')
+#     @register_job(scheduler,"interval",hours = 8)
+#     def my_job():
+#         print('定时任务启动,时间为：{0}'.format(datetime.datetime.now().strftime("%Y-%m-%d")))
+#         # 中央新闻
+#         update_china_top_news()
+#         # 科协官网
+#         update_kexie_news_into_mysql()
+#         # cast数据库
+#         hanle_cast_into_mysql()
+#         # 人名网时政
+#         updata_get_rmw_news_data()
+#         # 人民网科技
+#         update_get_rmw_kj_data()
+#         print('定时任务结束,时间为：{0}'.format(datetime.datetime.now().strftime("%Y-%m-%d")))
+#     register_events(scheduler)
+#     scheduler.start()
+# except Exception as err:
+#     print(err)
+#     scheduler.shutdown()
 
 
 #########################根据用户id、department和用户记录返回新闻列表###############
