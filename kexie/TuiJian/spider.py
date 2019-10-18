@@ -271,7 +271,6 @@ def get_kx_video_data(browser, url,base_url,label):
         # 获取列表
         info_list = browser.find_elements_by_xpath('//div[@id="286"]//li')
         info_list_len = len(info_list) + 1
-        print(info_list_len)
     except:
         info_list_len =0
         print('进入科协官网出错。。。')
@@ -294,10 +293,7 @@ def get_kx_video_data(browser, url,base_url,label):
                 del content['height']
             except:
                 pass
-            print(title)
-            print(news_url)
             temp_list.append(package_data_dict(title=title, url=news_url, img=img, content=str(content), date=video_time,source="中国科协", label=label))
-    print(temp_list)
     return temp_list
 #科协数据
 def get_kx_data(browser, url,base_url,label):
