@@ -324,6 +324,10 @@ def get_kx_data(browser, url,base_url,label):
             r.encoding =  r.apparent_encoding
             soup = BeautifulSoup(r.text, 'lxml')
             content = soup.select('#zoom')[0]
+            try:
+                del content['style']
+            except:
+                pass
             imgs = content.findAll('img')
             img_path = deal_imgs_and_a(base_url, content=content, imgs=imgs)
             temp_list.append(package_data_dict(title=title, url=news_url, img =img_path,content=str(content), date=news_time, source="中国科协",label = label))

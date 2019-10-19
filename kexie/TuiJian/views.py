@@ -17,7 +17,7 @@ from apscheduler.scheduler import Scheduler
 sched = Scheduler()  # 实例化，固定格式
 
 
-@sched.interval_schedule(hours=60)  # 装饰器，seconds=60意思为该函数为1分钟运行一次
+@sched.interval_schedule(hours=8)  # 装饰器，seconds=60意思为该函数为1分钟运行一次
 def mytask():
     print('定时任务启动,时间为：{0}'.format(datetime.now().strftime("%Y-%m-%d")))
     # 中央新闻
@@ -25,7 +25,7 @@ def mytask():
     # 科协官网
     update_kexie_news_into_mysql()
     # cast数据库
-    hanle_cast_into_mysql()
+    #hanle_cast_into_mysql()
     # 人名网时政
     updata_get_rmw_news_data()
     # 人民网科技
@@ -147,7 +147,11 @@ def individual(user_id, channel):
     # 有用户就根据用户画像检索新闻
     user_images_dict = get_user_images_accord_user_id_channel(user_id, channel)
     result_list.extend(get_news_list_accord_user_images(mymodels, user_images_dict))
-    return result_list
+    if len(result_list) > MAX_NEWS_NUMBER:
+        final_result_list = result_list[:MAX_NEWS_NUMBER]
+    else:
+        final_result_list = result_list
+    return final_result_list
 
 
 # 根据用户画像返回一个新闻列表
@@ -356,8 +360,8 @@ def channel_branch(channel, branch):
     #中国科协的频道单独推送
     # 如果是中国科协频道，那么必须由三部分组成：要闻、视频和通知
     if channel == CHANNEL_ZGKX:
-        result_list.extend(search_kx_data_from_mysql())
-        return  result_list
+        return search_kx_data_from_mysql()
+
     # 全国学会的用户在全国学会频道应该就只有他们自己的新闻，地方科协也一样
     if branch in num_xuehui() and channel == CHANNEL_QGXH:
         # 根据部门ID取得部门名称
@@ -385,32 +389,31 @@ def channel_branch(channel, branch):
 
 #搜索科协的数据
 def search_kx_data_from_mysql():
+    result_dict = {}
     result_list =[]
     #要闻五条search_data_from_mysql
     result_list.extend(search_data_from_mysql(myModel=KX,n=LIMIT_NEWS,label=KXTT))
     result_list.extend(search_data_from_mysql(myModel=KX, n=LIMIT_NEWS, label=KXYW))
-    #就这十条数据，还剩按照领导人数据排个序吧
+    #就这十条数据，还是按照领导人数据排个序吧
     kx_leaders_list = get_kx_leaders_from_mysql()
     first_news_list = sort_kx_news(news_list=result_list, keywords_list=kx_leaders_list)
-
-    #标签统一为要闻
-    for one_news in first_news_list:
-        one_news['label'] = KXYW
     if len(first_news_list) > LIMIT_NEWS:
-        result_list = first_news_list[:LIMIT_NEWS]
+        temp_list = first_news_list[:LIMIT_NEWS]
     else:
-        result_list = first_news_list
+        temp_list = first_news_list
+    #要闻
+    result_dict['news'] = temp_list
+
     #通知五条
-    result_list.extend(search_data_from_mysql(myModel=KX, n=LIMIT_NEWS, label=KXTZ))
+    temp_list = search_data_from_mysql(myModel=KX, n=LIMIT_NEWS, label=KXTZ)
+    result_dict['notices'] = temp_list
     #视频五条
-    result_list.extend(search_data_from_mysql(myModel=KX, n=LIMIT_NEWS, label=KXSP))
+    temp_list = search_data_from_mysql(myModel=KX, n=LIMIT_NEWS, label=KXSP)
+    result_dict['video'] = temp_list
     # 按照时间检索找五张img字段不为空的数据,用于轮播图
     temp_list= search_data_from_mysql(myModel=KX, n=LIMIT_NEWS, LB = True)
-    #标签统一为要闻
-    for one_news in temp_list:
-        one_news['label'] = LB
-    result_list.extend(temp_list)
-    return result_list
+    result_dict['banners'] = temp_list
+    return result_dict
 
 # 补充到足够数量的新闻
 def get_enough_news(news_list, mymodels):
@@ -535,7 +538,7 @@ def news_content(request):
         print(err)
     # 根据新闻id获取到新闻的详情
     news_info_dict = accord_news_id_get_content_list(news_id)
-
+    print(user_id)
     # 找到user_id才进行用户画像
     if user_id:
         db_table, number = get_table_and_id(news_id)
@@ -582,8 +585,9 @@ def get_table_and_id(news_id):
 def record_user_image(user_id, cur_channel, keywords_list):
     # 根据id搜索到用户
     user = search_user_from_momgodb(id=user_id)
-    # 更新用户的画像
-    update_uesr_iamges_accord_keywords_channel(user, cur_channel, keywords_list)
+    if user:
+        # 更新用户的画像
+        update_uesr_iamges_accord_keywords_channel(user, cur_channel, keywords_list)
 
 
 ####################################新闻id返回相似新闻的列表####################################

@@ -12,8 +12,8 @@ from .define import *
 
 
 # 加载进训练好的模型
-#model = gensim.models.Word2Vec.load(w2v_path_model)
-model =''
+model = gensim.models.Word2Vec.load(w2v_path_model)
+#model =''
 def similar_news(news_id):
     result_list = []
     # 根据id确定数据表和新闻id
@@ -42,7 +42,7 @@ def similar_news(news_id):
             temp_keywords = TF_IDF(str(one_data[3]), 10)
             temp_vec = cal_d2v(temp_keywords)
             score = xiangsidu(cur_vec, temp_vec)
-            if score > 0.2:
+            if score > 0.2 and score < 0.95:
                 temp_dict['news_id'] = one_data[0]
                 temp_dict['news_time'] = one_data[1]
                 temp_dict['news_source'] = one_data[2]
@@ -61,7 +61,7 @@ def similar_news(news_id):
             temp_keywords = TF_IDF(str(one_data[5]),10)
             temp_vec = cal_d2v(temp_keywords)
             score = xiangsidu(cur_vec, temp_vec)
-            if score > 0.5:
+            if score > 0.4 and score < 0.95:
                 temp_dict['news_id'] = one_data[0]
                 temp_dict['news_time'] = one_data[1]
                 temp_dict['news_source'] = one_data[2]
