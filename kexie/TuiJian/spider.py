@@ -15,6 +15,45 @@ from selenium.webdriver.support.ui  import WebDriverWait
 
 from .define import *
 img_list =[]
+#################################科协一家提供的新闻资讯和专家观点#####################################
+#新闻资讯
+def get_kxyj_news(url = r'http://ypt.cnki.net/znapp/ScienceAPI/GetKXHotList?keyWord=&pageIndex=1&pageSize=10',
+                  base_url =r'http://ypt.cnki.net/znapp/api/NYAnswerAPI/GetXMLContent?filename='):
+    r = requests.get(url = url).text
+    r_dict = json.loads(r)
+    result_list = []
+    news_data = r_dict['resultModel']['data']
+    for one_news in news_data:
+        temp_dict = {}
+        temp_dict['title'] = one_news['title']
+        temp_dict['author'] = one_news['author']
+        temp_dict['time'] = one_news['publishDate']
+        temp_dict['source'] = one_news['chkm']
+        temp_dict['title'] = one_news['title']
+        content = requests.get(url = base_url + one_news['fileName']).text
+        temp_dict['content'] = content
+        temp_dict['keywords'] = TF_IDF(content)
+        result_list.append(temp_dict)
+    return result_list
+#专家观点
+def get_kxyj_exp_opi(url = r'http://ypt.cnki.net/znapp/ScienceAPI/GetNewsList?keyWord=&pageIndex=1&pageSize=50', base_url = r'http://ypt.cnki.net/znapp/ScienceAPI/GetNewsDetail?id='):
+    r = requests.get(url = url).text
+    r_dict = json.loads(r)
+    news_data = r_dict['resultModel']['data']
+    result_list =[]
+    for one_news in news_data:
+        temp_dict = {}
+        temp_dict['title'] = one_news['title']
+        temp_dict['img'] = one_news['coverImage']
+        temp_dict['time'] = one_news['publishDate'].split(' ')[0].replace('/','-')
+        temp_dict['source'] = one_news['resource']
+        response = json.loads(requests.get(url = base_url + str(one_news['id'])).text)
+        temp_dict['url'] = response['resultModel']['data']['spiderUrl']
+        temp_dict['content'] = response['resultModel']['data']['content']
+        temp_dict['keywords'] = TF_IDF(response['resultModel']['data']['content'])
+        result_list.append(temp_dict)
+    return result_list
+
 #################################人民网时政新闻爬虫##################################################
 def get_rmw_news_data(url=r'http://www.people.com.cn/rss/rect_default.json',base_url = r'http://politics.people.com.cn'):
     data_json= requests.get(url=url).text
@@ -293,11 +332,12 @@ def get_kx_video_data(browser, url,base_url,label):
                 del content['height']
             except:
                 pass
+            print(title)
             temp_list.append(package_data_dict(title=title, url=news_url, img=img, content=str(content), date=video_time,source="中国科协", label=label))
     return temp_list
 #科协数据
 def get_kx_data(browser, url,base_url,label):
-    print('进入官网。。。')
+    print('进入{0}'.format(label))
     try:
         # 进入科协官网新闻
         browser.get(url)
@@ -305,6 +345,7 @@ def get_kx_data(browser, url,base_url,label):
         # 获取列表
         info_list = browser.find_elements_by_xpath('//div[@class="bt-mod-wzpb-02"]/ul/li')
         info_list_len = len(info_list) + 1
+        print(info_list_len)
     except:
         info_list_len =0
         print('进入科协官网出错。。。')
@@ -326,11 +367,14 @@ def get_kx_data(browser, url,base_url,label):
             content = soup.select('#zoom')[0]
             try:
                 del content['style']
-            except:
-                pass
+            except  Exception as err:
+                print('取出科协官网style错误')
+                print(err)
             imgs = content.findAll('img')
             img_path = deal_imgs_and_a(base_url, content=content, imgs=imgs)
+            content = str(content).replace("style",' ')
             temp_list.append(package_data_dict(title=title, url=news_url, img =img_path,content=str(content), date=news_time, source="中国科协",label = label))
+            print(title)
     return temp_list
 
 #########################3###########科协官网用bs4爬取#############################################################
@@ -443,6 +487,8 @@ def deal_imgs_and_a(base_url,content =None,imgs=None):
             if old_href[0] == '/':
                 new_href = base_url + old_href
                 a_href['href'] = new_href
+    if img_path.startswith('data'):
+        img_path = None
     return img_path
 
 #########################3###########爬取每天的置顶时政新闻，来自与中国网#############################################################
@@ -564,5 +610,4 @@ def package_data_dict(title=None, url=None, img =None,content=None, date=None, s
     temp_dict['keywords'] = ' '.join(keywords)
     temp_dict['source'] = source
     return temp_dict
-
 
