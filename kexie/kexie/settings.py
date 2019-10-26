@@ -81,7 +81,7 @@ WSGI_APPLICATION = 'kexie.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',   # 数据库引擎
-        'NAME': 'kexie_2',         # 要存储数据的库名，事先要创建之
+        'NAME': 'kexie',         # 要存储数据的库名，事先要创建之
         'USER': 'root',         # 数据库用户名
         'PASSWORD': 'password',     # 密码
         'HOST': 'localhost',    # 主机
