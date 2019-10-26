@@ -17,9 +17,11 @@ from apscheduler.scheduler import Scheduler
 sched = Scheduler()  # 实例化，固定格式
 
 
-@sched.interval_schedule(hours=8)  # 装饰器，seconds=60意思为该函数为1分钟运行一次
+@sched.interval_schedule(seconds=180)  # 装饰器，seconds=60意思为该函数为1分钟运行一次
 def mytask():
     print('定时任务启动,时间为：{0}'.format(datetime.now().strftime("%Y-%m-%d")))
+    #科协一家
+    update_kxyj_data()
     # 中央新闻
     update_china_top_news()
     # 科协官网
@@ -103,7 +105,6 @@ def get_user_news_list(request):
         result_list = accord_user_id_get_news_list(user_id, department, channel)
     else:  # 没有用户id,就按照部门推送，不进行用户画像记录
         result_list = channel_branch(channel, branch)
-    print(len(result_list))
     return HttpResponse(json.dumps(result_list, ensure_ascii=False))
 
 
@@ -262,6 +263,7 @@ def simhash_remove_similar(news_list):
 def sort_kx_news(news_list, keywords_list):
     result_list = []
     for one_news in news_list:
+        print(one_news)
         news_id = one_news['news_id']
         # 根据新闻id获取到新闻的详情
         news_info_dict = accord_news_id_get_content_list(news_id)
@@ -271,9 +273,13 @@ def sort_kx_news(news_list, keywords_list):
             if name in title or name in content:
                 score = title.count(name) * 10 + content.count(name)
                 one_news['news_score'] = score
-                result_list.append(one_news)
+            else:
+                one_news['news_score'] = 0
+        result_list.append(one_news)
     # 按照时间排序,然后按照得分排序
     final_result_list = sorted(result_list, key=itemgetter('priority', 'news_time', 'news_score'), reverse=True)
+    for one in final_result_list:
+        print(one)
     return final_result_list
 
 
@@ -561,7 +567,7 @@ def accord_news_id_get_content_list(news_id):
     # 根据db_table获取到models
     mymodels = table_to_models(db_table)
     # 查到数据
-    contents = mymodels.objects.filter(id=number).values_list('content', 'like', 'comment', 'keywords', 'title')
+    contents = mymodels.objects.filter(id=number).values_list('content', 'like', 'comment', 'keywords', 'title','time','source')
     # 保存结果
     result_dict = {}
     for one in contents:
@@ -570,6 +576,9 @@ def accord_news_id_get_content_list(news_id):
         result_dict['comment'] = one[2]
         result_dict['keywords_list'] = one[3]
         result_dict['news_title'] = one[4]
+        result_dict['news_time'] = one[5]
+        result_dict['news_source'] = one[6]
+
     return result_dict
 
 
@@ -602,6 +611,32 @@ def similar_news_list(request):
 
 
 ####################################以下都是爬虫更新入库函数####################################
+#############################科协一家资讯入库###########
+def update_kxyj_data():
+    #资讯
+    try:
+        news_list = spider.get_kxyj_news()
+    except Exception as err:
+        print('科协一家新闻资讯')
+        news_list=[]
+        print(err)
+    #专家观点
+    try:
+        news_list.extend(spider.get_kxyj_exp_opi())
+    except Exception as err:
+        print('专家观点出错')
+        print(err)
+
+    if news_list:
+        for one_news in news_list:
+            news = TECH(**one_news)
+            try:
+                news.save()
+                print('Successful')
+            except Exception as err:
+                print(err)
+
+
 
 
 #######################置顶的时政新闻入库###################
