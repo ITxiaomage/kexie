@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404
 from .spider import TF_IDF
 from .models import *
 from .define import *
-
+import datetime
 
 # 加载进训练好的模型
 model = gensim.models.Word2Vec.load(w2v_path_model)
@@ -33,17 +33,20 @@ def similar_news(news_id):
     else:
         return []
     if label == '视频':
-        video_data = mymodels.objects.filter(label='视频').order_by('-time')[:100].values_list('id', 'time', 'source', 'title',
-                                                                                  'img', 'content')
+        video_data = mymodels.objects.filter(label='视频').order_by('-time')[:50].values_list('id', 'time', 'source', 'title',
+                                                                                  'img', 'content',"keywords")
         cur_keywords = TF_IDF(str(title), 10)
         cur_vec = cal_d2v(cur_keywords)
         for one_data in video_data:
             temp_dict = {}
-            temp_keywords = TF_IDF(str(one_data[3]), 10)
+            temp_keywords = ' '.join(one_data[6])
+            if not temp_keywords:
+                continue
             temp_vec = cal_d2v(temp_keywords)
+
             score = xiangsidu(cur_vec, temp_vec)
             if score > 0.2 and score < 0.95:
-                temp_dict['news_id'] = one_data[0]
+                temp_dict['news_id'] = str(mymodels._meta.db_table )+ '_'+ str(one_data[0])
                 temp_dict['news_time'] = one_data[1]
                 temp_dict['news_source'] = one_data[2]
                 temp_dict['news_title'] = one_data[3]
@@ -52,17 +55,20 @@ def similar_news(news_id):
                 result_list.append(temp_dict)
     else:
         #当前新闻的内容
-        content_data = mymodels.objects.all().order_by('-time')[:100].values_list('id', 'time', 'source', 'title',
-                                                                                  'img', 'content')
+        content_data = mymodels.objects.all().order_by('-time')[:50].values_list('id', 'time', 'source', 'title',
+                                                                                  'img', 'content',"keywords")
         cur_keywords =  TF_IDF(str(content),10)
         cur_vec = cal_d2v(cur_keywords)
         for one_data in content_data:
             temp_dict = {}
-            temp_keywords = TF_IDF(str(one_data[5]),10)
+            temp_keywords = ' '.join(one_data[6])
+            if not temp_keywords:
+                continue
             temp_vec = cal_d2v(temp_keywords)
             score = xiangsidu(cur_vec, temp_vec)
+
             if score > 0.4 and score < 0.95:
-                temp_dict['news_id'] = one_data[0]
+                temp_dict['news_id'] = str(mymodels._meta.db_table )+ '_'+ str(one_data[0])
                 temp_dict['news_time'] = one_data[1]
                 temp_dict['news_source'] = one_data[2]
                 temp_dict['news_title'] = one_data[3]
