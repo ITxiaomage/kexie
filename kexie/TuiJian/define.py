@@ -1,6 +1,6 @@
 
 #默认的中央领导人照片
-IMG = 'http://paper.people.com.cn/rmrb/res/1/20190904/1567536994561_1.jpg'
+IMG = 'http://www.gov.cn/xinwen/site1/20140905/18037327d8e41573fa3901.jpg'
 
 #训练好的词向量模型路径
 #w2v_path_model ='E:\推荐相关\model/w2v.model'
